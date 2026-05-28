@@ -64,3 +64,9 @@ yarn-error.log
 
 # testing
 /coverage
+
+assets/images/*.jpg
+
+assets/images/*.png
+
+assets/videos/
