@@ -1,15 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Image, ScrollView } from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Image,
+  ScrollView,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const sampleCovers = [
-  require('../../assets/images/artics page.png'),
-  require('../../assets/images/artics page-1.png'),
-  require('../../assets/images/music page.png'),
-  require('../../assets/images/home page.png'),
+  require('../../assets/images/artics_page.png'),
+  require('../../assets/images/artics_page-1.png'),
+  require('../../assets/images/music_page.png'),
+  require('../../assets/images/home_page.png'),
 ];
 
-export default function Library({ navigation, route }) {
+export default function Library({navigation, route}) {
   const [showMenu, setShowMenu] = useState(false);
   const [myPlaylists, setMyPlaylists] = useState([]);
 
@@ -31,29 +39,54 @@ export default function Library({ navigation, route }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => setShowMenu(!showMenu)} activeOpacity={0.8}>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <TouchableOpacity
+            onPress={() => setShowMenu(!showMenu)}
+            activeOpacity={0.8}>
             <View style={styles.profilePic} />
           </TouchableOpacity>
           <Text style={styles.title}>Bibliothèque</Text>
         </View>
         <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionIcon} onPress={() => navigation.navigate('Rechercher')}><Ionicons name="search-outline" size={26} color="#FDFBF7" /></TouchableOpacity>
-          <TouchableOpacity style={styles.actionIcon} onPress={() => navigation.navigate('Créer')}><Ionicons name="add-outline" size={30} color="#FDFBF7" /></TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionIcon}
+            onPress={() => navigation.navigate('Rechercher')}>
+            <Ionicons name="search-outline" size={26} color="#FDFBF7" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionIcon}
+            onPress={() => navigation.navigate('Créer')}>
+            <Ionicons name="add-outline" size={30} color="#FDFBF7" />
+          </TouchableOpacity>
         </View>
       </View>
       {/* Menu déroulant du profil */}
       {showMenu && (
         <View style={styles.profileMenu}>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); Alert.alert('Notifications', 'Aucune nouvelle notification.'); }}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowMenu(false);
+              Alert.alert('Notifications', 'Aucune nouvelle notification.');
+            }}>
             <Ionicons name="notifications-outline" size={24} color="#FDFBF7" />
             <Text style={styles.menuText}>Notifications</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); Alert.alert('Historique', 'Historique des écoutes.'); }}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowMenu(false);
+              Alert.alert('Historique', 'Historique des écoutes.');
+            }}>
             <Ionicons name="time-outline" size={24} color="#FDFBF7" />
             <Text style={styles.menuText}>Historique</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); Alert.alert('Paramètres', 'Ouverture des paramètres...'); }}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              setShowMenu(false);
+              Alert.alert('Paramètres', 'Ouverture des paramètres...');
+            }}>
             <Ionicons name="settings-outline" size={24} color="#FDFBF7" />
             <Text style={styles.menuText}>Paramètres</Text>
           </TouchableOpacity>
@@ -62,22 +95,27 @@ export default function Library({ navigation, route }) {
 
       {/* Condition : Si la liste est vide, on affiche le texte, sinon on affiche les playlists */}
       {myPlaylists.length === 0 ? (
-        <Text style={styles.emptyText}>Votre bibliothèque est vide pour le moment.</Text>
+        <Text style={styles.emptyText}>
+          Votre bibliothèque est vide pour le moment.
+        </Text>
       ) : (
-        <ScrollView style={styles.playlistContainer} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.playlistContainer}
+          showsVerticalScrollIndicator={false}>
           {myPlaylists.map((playlist, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.playlistCard} 
+            <TouchableOpacity
+              key={index}
+              style={styles.playlistCard}
               activeOpacity={0.8}
-              onPress={() => navigation.navigate('MusicPage', { 
-                item: { 
-                  title: playlist.name, 
-                  artist: 'Playlist • Vous', 
-                  image: playlist.image 
-                } 
-              })}
-            >
+              onPress={() =>
+                navigation.navigate('MusicPage', {
+                  item: {
+                    title: playlist.name,
+                    artist: 'Playlist • Vous',
+                    image: playlist.image,
+                  },
+                })
+              }>
               <Image source={playlist.image} style={styles.playlistCover} />
               <View style={styles.playlistInfo}>
                 <Text style={styles.playlistTitle}>{playlist.name}</Text>
@@ -92,20 +130,63 @@ export default function Library({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#181411', padding: 16, paddingTop: 60 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 },
-  profilePic: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#2C241E', marginRight: 12 },
-  title: { color: '#FDFBF7', fontSize: 24, fontWeight: 'bold' },
-  headerActions: { flexDirection: 'row', alignItems: 'center' },
-  actionIcon: { marginLeft: 20 },
-  profileMenu: { backgroundColor: '#2C241E', borderRadius: 12, padding: 8, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
-  menuText: { color: '#FDFBF7', fontSize: 16, marginLeft: 16, fontWeight: '600' },
-  emptyText: { color: '#C4A484', fontSize: 16, textAlign: 'center', marginTop: 40 },
-  playlistContainer: { flex: 1, marginTop: 10 },
-  playlistCard: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  playlistCover: { width: 64, height: 64, backgroundColor: '#2C241E', borderRadius: 4, justifyContent: 'center', alignItems: 'center' },
-  playlistInfo: { marginLeft: 16, flex: 1 },
-  playlistTitle: { color: '#FDFBF7', fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  playlistSubtitle: { color: '#C4A484', fontSize: 14 },
+  container: {flex: 1, backgroundColor: '#181411', padding: 16, paddingTop: 60},
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+  },
+  profilePic: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#2C241E',
+    marginRight: 12,
+  },
+  title: {color: '#FDFBF7', fontSize: 24, fontWeight: 'bold'},
+  headerActions: {flexDirection: 'row', alignItems: 'center'},
+  actionIcon: {marginLeft: 20},
+  profileMenu: {
+    backgroundColor: '#2C241E',
+    borderRadius: 12,
+    padding: 8,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuText: {color: '#FDFBF7', fontSize: 16, marginLeft: 16, fontWeight: '600'},
+  emptyText: {
+    color: '#C4A484',
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  playlistContainer: {flex: 1, marginTop: 10},
+  playlistCard: {flexDirection: 'row', alignItems: 'center', marginBottom: 16},
+  playlistCover: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#2C241E',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playlistInfo: {marginLeft: 16, flex: 1},
+  playlistTitle: {
+    color: '#FDFBF7',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  playlistSubtitle: {color: '#C4A484', fontSize: 14},
 });

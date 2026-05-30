@@ -1,15 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Animated, Easing, Alert } from 'react-native';
+import React, {useState, useEffect, useRef} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Animated,
+  Easing,
+  Alert,
+} from 'react-native';
 import Slider from '@react-native-community/slider';
-import theme, { Colors } from '../theme';
+import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-export default function NowPlaying({ navigation }) {
+export default function NowPlaying({navigation, route}) {
+  const { track } = route.params;
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isLiked, setIsLiked] = useState(false);
   const [position, setPosition] = useState(0);
-  const duration = 213; // Durée totale simulée (3 minutes 33 en secondes)
+  const duration = track.duration || 200;
 
-  // Moteur du lecteur : fait avancer le temps chaque seconde
   useEffect(() => {
     let interval;
     if (isPlaying && position < duration) {
@@ -18,19 +28,18 @@ export default function NowPlaying({ navigation }) {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isPlaying, position]);
+  }, [isPlaying, position, duration]);
 
-  // Moteur d'animation : fait tourner la pochette
   const spinValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const spinAnimation = Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
-        duration: 10000, // Fait un tour complet toutes les 10 secondes
-        easing: Easing.linear, // Vitesse de rotation constante
-        useNativeDriver: true, // Très important pour la fluidité
-      })
+        duration: 12000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
     );
 
     if (isPlaying) {
@@ -39,58 +48,79 @@ export default function NowPlaying({ navigation }) {
       spinAnimation.stop();
     }
     return () => spinAnimation.stop();
-  }, [isPlaying]);
+  }, [isPlaying, spinValue]);
 
-  // Convertit la valeur d'animation (0 -> 1) en degrés (0deg -> 360deg)
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
 
-  // Fonction pour formater les secondes en affichage mm:ss
-  const formatTime = (secs) => {
+  const formatTime = secs => {
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+  const bottomActions = [
+    {icon: 'heart-outline', label: 'Like', onPress: () => setIsLiked(!isLiked)},
+    {icon: 'text-outline', label: 'Paroles', onPress: () => navigation.navigate('Lyrics')},
+    {icon: 'list-outline', label: 'File', onPress: () => Alert.alert('File', 'File d\'attente')},
+    {icon: 'share-social-outline', label: 'Partager', onPress: () => Alert.alert('Partager', 'Partager ce titre')},
+  ];
+
   return (
     <View style={theme.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.8} style={styles.headerIcon}>
-          <Ionicons name="chevron-down" size={32} color="#FDFBF7" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.8}
+          style={styles.headerIcon}>
+          <Ionicons name="chevron-back" size={28} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Lecture en cours</Text>
-        <TouchableOpacity activeOpacity={0.8} style={styles.headerIcon} onPress={() => Alert.alert('Options', 'Menu des options de la piste.')}>
-          <Ionicons name="ellipsis-horizontal" size={24} color="#FDFBF7" />
+        <TouchableOpacity
+          activeOpacity={0.8}
+          style={styles.headerIcon}
+          onPress={() => Alert.alert('Options', 'Menu des options de la piste.')}>
+          <Ionicons name="ellipsis-vertical" size={24} color={Colors.primary} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.artContainer}>
-        <Animated.Image 
-          source={require('../../assets/images/artics page.png')} 
-          style={[styles.art, { transform: [{ rotate: spin }] }]} 
+        <Animated.Image
+          source={track.cover_url ? {uri: track.cover_url} : require('../../assets/images/logo.png')}
+          style={[styles.art, {transform: [{rotate: spin}]}]}
         />
       </View>
 
-      <View style={{ paddingHorizontal: 20, marginTop: 18 }}>
-        <Text style={styles.trackTitle}>Bad Guy</Text>
-        <Text style={styles.trackArtist}>Billie Eilish</Text>
+      <View style={styles.trackInfo}>
+        <View style={styles.titleRow}>
+          <View style={{flex: 1}}>
+            <Text style={styles.trackTitle}>{track.title}</Text>
+            <View style={styles.artistRow}>
+              <Text style={styles.trackArtist}>{track.artist}</Text>
+              <TouchableOpacity onPress={() => setIsLiked(!isLiked)}>
+                <Ionicons
+                  name={isLiked ? 'heart' : 'heart-outline'}
+                  size={22}
+                  color={Colors.primary}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </View>
 
-      <View style={{ paddingHorizontal: 20, marginTop: 18 }}>
-        {/* Barre de progression interactive (Slider) */}
+      <View style={styles.progressSection}>
         <Slider
-          style={{ width: '100%', height: 40, marginVertical: -10 }}
+          style={styles.slider}
           minimumValue={0}
           maximumValue={duration}
           value={position}
-          onSlidingComplete={(val) => setPosition(Math.floor(val))}
-          minimumTrackTintColor="#E67E22"
-          maximumTrackTintColor="#4A3B32"
-          thumbTintColor="#FDFBF7"
+          onSlidingComplete={val => setPosition(Math.floor(val))}
+          minimumTrackTintColor={Colors.primary}
+          maximumTrackTintColor={Colors.accent}
+          thumbTintColor={Colors.primary}
         />
-        {/* Affichage des temps */}
         <View style={styles.timeRow}>
           <Text style={styles.timeText}>{formatTime(position)}</Text>
           <Text style={styles.timeText}>{formatTime(duration)}</Text>
@@ -98,41 +128,175 @@ export default function NowPlaying({ navigation }) {
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity onPress={() => Alert.alert('Mode Aléatoire', 'Lecture aléatoire activée/désactivée')}>
-          <Ionicons name="shuffle" size={28} color="#C4A484" />
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.smallBtn} onPress={() => Alert.alert('Précédent', 'Retour à la piste précédente')}>
-          <Ionicons name="play-skip-back" size={22} color="#FDFBF7" />
+        <TouchableOpacity
+          onPress={() => Alert.alert('Mode Aléatoire', 'Lecture aléatoire activée/désactivée')}>
+          <Ionicons name="shuffle" size={26} color={Colors.primary} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.bigBtn} onPress={() => setIsPlaying(!isPlaying)}>
-          <Ionicons name={isPlaying ? "pause" : "play"} size={44} color="#181411" style={{ marginLeft: isPlaying ? 0 : 4 }} />
+        <TouchableOpacity
+          style={styles.smallBtn}
+          onPress={() => Alert.alert('Précédent', 'Retour à la piste précédente')}>
+          <Ionicons name="play-skip-back" size={24} color={Colors.text} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.smallBtn} onPress={() => Alert.alert('Suivant', 'Passer à la piste suivante')}>
-          <Ionicons name="play-skip-forward" size={22} color="#FDFBF7" />
+        <TouchableOpacity
+          style={styles.bigBtn}
+          onPress={() => setIsPlaying(!isPlaying)}>
+          <Ionicons
+            name={isPlaying ? 'pause' : 'play'}
+            size={40}
+            color={Colors.background}
+            style={{marginLeft: isPlaying ? 0 : 4}}
+          />
         </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => Alert.alert('Répéter', 'Mode répétition activé/désactivé')}>
-          <Ionicons name="repeat" size={28} color="#C4A484" />
+
+        <TouchableOpacity
+          style={styles.smallBtn}
+          onPress={() => Alert.alert('Suivant', 'Passer à la piste suivante')}>
+          <Ionicons name="play-skip-forward" size={24} color={Colors.text} />
         </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => Alert.alert('Répéter', 'Mode répétition activé/désactivé')}>
+          <Ionicons name="repeat" size={26} color={Colors.primary} />
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.bottomActions}>
+        {bottomActions.map(action => (
+          <TouchableOpacity
+            key={action.label}
+            style={styles.actionBtn}
+            onPress={action.onPress}
+            activeOpacity={0.8}>
+            <Ionicons name={action.icon} size={20} color={Colors.primary} />
+            <Text style={styles.actionLabel}>{action.label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 40, paddingBottom: 20 },
-  headerIcon: { width: 40, alignItems: 'center' },
-  headerTitle: { color: '#FDFBF7', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5 },
-  artContainer: { padding: 24, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 15 }, shadowOpacity: 0.4, shadowRadius: 20, elevation: 15 },
-  art: { width: 320, height: 320, borderRadius: 160 }, // Transformé en cercle parfait
-  trackTitle: { color: '#FDFBF7', fontSize: 24, fontWeight: '800' },
-  trackArtist: { color: '#C4A484', marginTop: 6 },
-  timeRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  timeText: { color: '#C4A484', fontSize: 12, fontWeight: '500' },
-  controls: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 32, alignItems: 'center' },
-  smallBtn: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#2C241E', justifyContent: 'center', alignItems: 'center' },
-  bigBtn: { width: 96, height: 96, borderRadius: 48, backgroundColor: '#E67E22', justifyContent: 'center', alignItems: 'center' },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 48,
+    paddingBottom: 8,
+  },
+  headerIcon: {width: 40, alignItems: 'center'},
+  artContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    alignItems: 'center',
+  },
+  art: {
+    width: 320,
+    height: 320,
+    borderRadius: 24,
+  },
+  trackInfo: {
+    paddingHorizontal: 24,
+    marginTop: 20,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  trackTitle: {
+    color: Colors.text,
+    fontSize: 28,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  artistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 6,
+  },
+  trackArtist: {
+    color: Colors.primary,
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  trackAlbum: {
+    color: Colors.accent,
+    fontSize: 14,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  progressSection: {
+    paddingHorizontal: 24,
+    marginTop: 16,
+  },
+  slider: {
+    width: '100%',
+    height: 40,
+    marginVertical: -8,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 2,
+  },
+  timeText: {
+    color: Colors.muted,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  smallBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bigBtn: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  bottomActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 28,
+    paddingHorizontal: 16,
+    paddingBottom: 24,
+  },
+  actionBtn: {
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    minWidth: 72,
+  },
+  actionLabel: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+  },
 });

@@ -1,134 +1,273 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
-import theme, { Colors } from '../theme';
+import React, {useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+} from 'react-native';
+import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {getHomeData} from '../services/musicApi';
+import { supabase } from '../supabaseClient';
+import {usePlayer} from '../context/PlayerContext';
 
-const playlists = [
-  { title: 'Hits du moment', artist: 'Playlist • Spotify', image: require('../../assets/images/artics page.png') },
-  { title: 'Scorpion', artist: 'Album • Drake', image: require('../../assets/images/artics page-1.png') },
-  { title: 'Découverte', artist: 'Mix • Pour vous', image: require('../../assets/images/artics page.png') },
-];
+export default function Home({navigation}) {
+  const [sections, setSections] = useState({
+    afrobeats: [],
+    topGlobal: [],
+    itunesAfro: [],
+    recentTracks: [],
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const {playTrack} = usePlayer();
 
-const recents = [
-  { title: 'Happier Than Ever', image: require('../../assets/images/home page.png') },
-  { title: 'Scorpion', image: require('../../assets/images/artics page-1.png') },
-  { title: 'Mix Pop', image: require('../../assets/images/artics page.png') },
-  { title: 'Billie Eilish', image: require('../../assets/images/home page.png') },
-];
-
-export default function Home({ navigation }) {
-  // 1. Déclaration des variables d'état (vides au départ)
-  const [dynamicRecents, setDynamicRecents] = useState([]);
-  const [dynamicPlaylists, setDynamicPlaylists] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Gère l'affichage de l'icône de chargement
-
-  // 2. Simulation de récupération de données depuis internet
   useEffect(() => {
-    // Le setTimeout imite le temps d'attente d'un serveur (1,5 seconde)
-    setTimeout(() => {
-      // Plus tard, vous remplacerez ceci par un vrai appel API : await fetch('votre-url.com/api/musiques')
-      setDynamicRecents(recents); 
-      setDynamicPlaylists(playlists);
-      setIsLoading(false); // Le chargement est terminé
-    }, 1500);
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('tracks')
+        .select('*, artists(name)')
+        .limit(20);
+      
+      if (error) throw error;
+      setSections({
+        afrobeats: data || [],
+        topGlobal: data || [],
+        itunesAfro: [],
+        recentTracks: data || [],
+      });
+    } catch (e) {
+      console.error('Home fetchData error:', e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /** Lance la lecture et navigue vers NowPlaying */
+  const handlePlay = (track, queue) => {
+    playTrack(track, queue);
+    navigation.navigate('NowPlaying', {track});
+  };
+
+  const renderRecentCard = (item, index, queue) => (
+    <TouchableOpacity
+      key={item.id || index}
+      style={styles.recentCard}
+      activeOpacity={0.8}
+      onPress={() => handlePlay(item, queue)}>
+      <Image
+        source={
+          item.cover_url
+            ? {uri: item.cover_url}
+            : require('../../assets/images/logo.png')
+        }
+        style={styles.recentImage}
+      />
+      <Text style={styles.recentTitle} numberOfLines={2}>
+        {item.title}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderTrackCard = (p, index, queue) => (
+    <TouchableOpacity
+      key={p.id || index}
+      style={styles.card}
+      activeOpacity={0.9}
+      onPress={() => handlePlay(p, queue)}>
+      <Image
+        source={
+          p.cover_url ? {uri: p.cover_url} : require('../../assets/images/logo.png')
+        }
+        style={styles.cardImage}
+      />
+      <Text style={styles.cardTitle} numberOfLines={1}>
+        {p.title}
+      </Text>
+      <Text style={styles.cardArtist} numberOfLines={1}>
+        {p.artists?.name}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={[theme.container, styles.mainContainer]}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
-        
-        {/* Header : Profil et Filtres */}
+      <ScrollView contentContainerStyle={{paddingBottom: 140}}>
+        {/* ── Header ── */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <TouchableOpacity onPress={() => navigation.navigate('Bibliothèque')} activeOpacity={0.8}>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Bibliothèque')}
+                activeOpacity={0.8}>
                 <View style={styles.profilePic} />
               </TouchableOpacity>
-              <Text style={styles.greeting}>Bonjour</Text>
+              <Text style={styles.greeting}>AFRO SOUND</Text>
             </View>
+            <TouchableOpacity onPress={fetchData} activeOpacity={0.8}>
+              <Ionicons
+                name="refresh-outline"
+                size={24}
+                color={Colors.primary}
+              />
+            </TouchableOpacity>
           </View>
           <View style={styles.filtersRow}>
-            <TouchableOpacity style={styles.filterPill} onPress={() => Alert.alert('Filtre', 'Affichage de la musique.')}><Text style={styles.filterText}>Musique</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.filterPill} onPress={() => Alert.alert('Filtre', 'Affichage des podcasts.')}><Text style={styles.filterText}>Podcasts et émissions</Text></TouchableOpacity>
+            <View style={styles.filterPill}>
+              <Text style={styles.filterText}>🎵 Deezer</Text>
+            </View>
+            <View style={[styles.filterPill, {backgroundColor: '#1D1A29'}]}>
+              <Text style={styles.filterText}>🍎 iTunes</Text>
+            </View>
           </View>
         </View>
 
-        {/* Grille des éléments récents (Style Spotify) */}
-        <View style={styles.recentGrid}>
-          {isLoading ? (
-            // Si c'est en train de charger, on affiche une roue qui tourne
-            <ActivityIndicator size="small" color="#E67E22" style={{ marginVertical: 20, marginLeft: '45%' }} />
-          ) : (
-            // Sinon, on affiche nos données dynamiques
-            dynamicRecents.map((item, index) => (
-              <TouchableOpacity key={index} style={styles.recentCard} activeOpacity={0.8} onPress={() => navigation.navigate('MusicPage')}>
-                <Image source={item.image} style={styles.recentImage} />
-                <Text style={styles.recentTitle} numberOfLines={2}>{item.title}</Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
-
-        {/* Section Recommandations */}
-        <Text style={styles.sectionTitle}>Conçu pour vous</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 16 }}>
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#E67E22" style={{ margin: 20 }} />
-          ) : (
-            dynamicPlaylists.map((p, i) => (
-              <TouchableOpacity key={i} style={styles.card} activeOpacity={0.9} onPress={() => navigation.navigate('MusicPage', { item: p })}>
-                <Image source={p.image} style={styles.cardImage} />
-                <Text style={styles.cardTitle} numberOfLines={1}>{p.title}</Text>
-                <Text style={styles.cardArtist}>{p.artist}</Text>
-              </TouchableOpacity>
-            ))
-          )}
-        </ScrollView>
-
-        {/* Section Récemment écouté */}
-        <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Récemment écouté</Text>
-        <View style={{ paddingHorizontal: 16, marginTop: 12 }}>
-          <TouchableOpacity style={styles.trackRow} activeOpacity={0.8} onPress={() => navigation.navigate('NowPlaying')}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Image source={require('../../assets/images/home page.png')} style={styles.trackCover} />
-              <View style={{ marginLeft: 12 }}>
-                <Text style={styles.trackTitle}>Happier Than Ever</Text>
-                <Text style={styles.trackArtist}>Billie Eilish</Text>
-              </View>
+        {isLoading ? (
+          <ActivityIndicator
+            size="large"
+            color={Colors.primary}
+            style={{marginTop: 80}}
+          />
+        ) : (
+          <>
+            {/* ── Écoutes récentes (grille) ── */}
+            <View style={styles.recentGrid}>
+              {sections.recentTracks.slice(0, 6).map((item, i) =>
+                renderRecentCard(item, i, sections.recentTracks),
+              )}
             </View>
-            <View style={styles.playIconPlaceholder} />
-          </TouchableOpacity>
-        </View>
 
+            {/* ── Afrobeats Deezer ── */}
+            <Text style={styles.sectionTitle}>🔥 Afrobeats</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+              {sections.afrobeats.map((p, i) =>
+                renderTrackCard(p, i, sections.afrobeats),
+              )}
+            </ScrollView>
+
+            {/* ── Top Mondial Deezer ── */}
+            <Text style={[styles.sectionTitle, {marginTop: 28}]}>
+              🌍 Top Mondial
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+              {sections.topGlobal.map((p, i) =>
+                renderTrackCard(p, i, sections.topGlobal),
+              )}
+            </ScrollView>
+
+            {/* ── Découvertes iTunes ── */}
+            <Text style={[styles.sectionTitle, {marginTop: 28}]}>
+              🍎 Découvertes iTunes
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+              {sections.itunesAfro.map((p, i) =>
+                renderTrackCard(p, i, sections.itunesAfro),
+              )}
+            </ScrollView>
+          </>
+        )}
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  mainContainer: { flex: 1, backgroundColor: '#181411' },
-  header: { paddingHorizontal: 16, paddingTop: 40, paddingBottom: 16 },
-  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  profilePic: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#2C241E', marginRight: 12 },
-  greeting: { color: '#FDFBF7', fontSize: 24, fontWeight: 'bold', letterSpacing: -0.5 },
-  filtersRow: { flexDirection: 'row' },
-  filterPill: { backgroundColor: '#2C241E', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, marginRight: 8 },
-  filterText: { color: '#FDFBF7', fontSize: 13, fontWeight: '500' },
-  
-  recentGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, justifyContent: 'space-between' },
-  recentCard: { width: '48%', backgroundColor: '#2C241E', flexDirection: 'row', alignItems: 'center', borderRadius: 4, marginBottom: 8, overflow: 'hidden' },
-  recentImage: { width: 56, height: 56 },
-  recentTitle: { flex: 1, color: '#FDFBF7', fontSize: 13, fontWeight: '600', paddingHorizontal: 8 },
-  
-  sectionTitle: { color: '#FDFBF7', fontSize: 22, fontWeight: 'bold', marginLeft: 16, marginTop: 24, marginBottom: 16, letterSpacing: -0.5 },
-  card: { width: 140, marginRight: 16 },
-  cardImage: { width: 150, height: 150, borderRadius: 20 },
-  cardTitle: { color: '#FDFBF7', marginTop: 12, fontSize: 14, fontWeight: '600' },
-  cardArtist: { color: '#C4A484', marginTop: 4, fontSize: 13 },
-  
-  trackRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
-  trackCover: { width: 56, height: 56, borderRadius: 4, backgroundColor: '#2C241E' },
-  trackTitle: { color: '#FDFBF7', fontSize: 16, fontWeight: '600' },
-  trackArtist: { color: '#C4A484', fontSize: 14, marginTop: 4 },
-  playIconPlaceholder: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: '#C4A484' },
+  mainContainer: {flex: 1, backgroundColor: Colors.background},
+  header: {paddingHorizontal: 16, paddingTop: 40, paddingBottom: 16},
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  profilePic: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    marginRight: 12,
+  },
+  greeting: {
+    color: '#FDFBF7',
+    fontSize: 22,
+    fontWeight: 'bold',
+    letterSpacing: -0.5,
+  },
+  filtersRow: {flexDirection: 'row'},
+  filterPill: {
+    backgroundColor: Colors.surface,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginRight: 8,
+  },
+  filterText: {color: '#FDFBF7', fontSize: 13, fontWeight: '500'},
+  recentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    justifyContent: 'space-between',
+  },
+  recentCard: {
+    width: '48%',
+    backgroundColor: Colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 4,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  recentImage: {width: 56, height: 56},
+  recentTitle: {
+    flex: 1,
+    color: '#FDFBF7',
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 8,
+  },
+  sectionTitle: {
+    color: '#FDFBF7',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginLeft: 16,
+    marginTop: 24,
+    marginBottom: 16,
+    letterSpacing: -0.5,
+  },
+  card: {width: 150, marginRight: 16, position: 'relative'},
+  cardImage: {width: 150, height: 150, borderRadius: 16},
+  cardTitle: {
+    color: '#FDFBF7',
+    marginTop: 10,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  cardArtist: {color: Colors.muted, marginTop: 2, fontSize: 12},
+  sourceBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  itunesBadge: {backgroundColor: 'rgba(29,26,41,0.85)'},
+  sourceBadgeText: {fontSize: 12},
 });

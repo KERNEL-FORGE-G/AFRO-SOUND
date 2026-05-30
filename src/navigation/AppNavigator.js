@@ -1,8 +1,8 @@
 import React from 'react';
-import { View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {View} from 'react-native';
+import {NavigationContainer} from '@react-navigation/native';
+import {createStackNavigator} from '@react-navigation/stack';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import GetStarted from '../screens/GetStarted';
 import Home from '../screens/Home';
@@ -17,25 +17,26 @@ import Search from '../screens/Search';
 import Library from '../screens/Library';
 import SearchResults from '../screens/SearchResults';
 import CreatePlaylist from '../screens/CreatePlaylist';
+import {Colors} from '../theme';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   return (
-    <View style={{ flex: 1, backgroundColor: '#181411' }}>
+    <View style={{flex: 1, backgroundColor: Colors.background}}>
       <Tab.Navigator
-        screenOptions={({ route }) => ({
+        screenOptions={({route}) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: '#181411',
-            borderTopColor: '#2C241E',
+            backgroundColor: Colors.background,
+            borderTopColor: Colors.border,
             height: 60,
             paddingBottom: 8,
           },
-          tabBarActiveTintColor: '#E67E22', // Orange vibrant
-          tabBarInactiveTintColor: '#C4A484', // Ton sable
-          tabBarIcon: ({ focused, color, size }) => {
+          tabBarActiveTintColor: Colors.primary,
+          tabBarInactiveTintColor: Colors.muted,
+          tabBarIcon: ({focused, color, size}) => {
             let iconName;
 
             if (route.name === 'Accueil') {
@@ -52,13 +53,13 @@ function MainTabs() {
           },
         })}>
         <Tab.Screen name="Accueil" component={Home} />
-      <Tab.Screen name="Rechercher" component={Search} />
+        <Tab.Screen name="Rechercher" component={Search} />
         <Tab.Screen name="Créer" component={CreatePlaylist} />
-      <Tab.Screen name="Bibliothèque" component={Library} />
+        <Tab.Screen name="Bibliothèque" component={Library} />
       </Tab.Navigator>
-      
+
       {/* PlayerBar persistante au-dessus de la barre de navigation */}
-      <View style={{ position: 'absolute', bottom: 60, left: 0, right: 0 }}>
+      <View style={{position: 'absolute', bottom: 60, left: 0, right: 0}}>
         <PlayerBar />
       </View>
     </View>
@@ -68,7 +69,7 @@ function MainTabs() {
 export default function AppNavigator() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Navigator screenOptions={{headerShown: false}}>
         <Stack.Screen name="GetStarted" component={GetStarted} />
         <Stack.Screen name="ChooseMode" component={ChooseMode} />
         <Stack.Screen name="Loading" component={Loading} />
