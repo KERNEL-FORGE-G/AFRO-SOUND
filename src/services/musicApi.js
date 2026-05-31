@@ -5,8 +5,22 @@
  *  - iTunes API   → previews 30s, catalogue Apple Music
  */
 
+import { getBaseUrl } from '../config';
+
 const DEEZER_BASE = 'https://api.deezer.com';
 const ITUNES_BASE = 'https://itunes.apple.com';
+
+/** Recherche via le nouveau backend (Jamendo) */
+export const searchJamendo = async (query, limit = 10) => {
+  try {
+    const baseUrl = getBaseUrl();
+    const res = await fetch(`${baseUrl}/api/jamendo/search?query=${encodeURIComponent(query)}&limit=${limit}`);
+    return await res.json();
+  } catch (e) {
+    console.warn('[Jamendo search] Erreur:', e.message);
+    return [];
+  }
+};
 
 // ─────────────────────────────────────────
 // Helpers de normalisation
@@ -150,42 +164,56 @@ export const getItunesAfrobeats = async (limit = 20) => {
 // ─────────────────────────────────────────
 
 /**
- * Recherche combinée : Deezer EN PREMIER, iTunes en fallback
- * Retourne un mix des deux sources
+ * Recherche combinée : Deezer, Jamendo (via backend) et iTunes
  */
 export const searchAll = async (query, limit = 10) => {
-  const [deezerResults, itunesResults] = await Promise.all([
+  const [deezerResults, jamendoResults, itunesResults] = await Promise.all([
     searchDeezer(query, limit),
+    searchJamendo(query, limit),
     searchItunes(query, limit),
   ]);
 
-  // Intercale les résultats : 1 Deezer, 1 iTunes, etc.
+  // Intercale les résultats
   const combined = [];
-  const maxLen = Math.max(deezerResults.length, itunesResults.length);
+  const maxLen = Math.max(deezerResults.length, jamendoResults.length, itunesResults.length);
   for (let i = 0; i < maxLen; i++) {
     if (deezerResults[i]) combined.push(deezerResults[i]);
+    if (jamendoResults[i]) combined.push(jamendoResults[i]);
     if (itunesResults[i]) combined.push(itunesResults[i]);
   }
   return combined;
 };
 
 /**
- * Récupère les données de la page d'accueil :
- * - Afrobeats (Deezer)
- * - Top Global (Deezer)
- * - Afrobeats (iTunes, pour varier)
+ * Récupère les titres stockés dans la base de données Supabase via le backend
+ */
+export const getSupabaseSongs = async () => {
+  try {
+    const baseUrl = getBaseUrl();
+    const res = await fetch(`${baseUrl}/api/songs`);
+    return await res.json();
+  } catch (e) {
+    console.warn('[Supabase songs] Erreur:', e.message);
+    return [];
+  }
+};
+
+/**
+ * Récupère les données de la page d'accueil
  */
 export const getHomeData = async () => {
-  const [afrobeats, topGlobal, itunesAfro] = await Promise.all([
+  const [afrobeats, topGlobal, itunesAfro, customSongs] = await Promise.all([
     getDeezerAfrobeats(10),
     getDeezerTopGlobal(10),
     getItunesAfrobeats(8),
+    getSupabaseSongs(),
   ]);
 
   return {
     afrobeats,          // Section "Afrobeats"
     topGlobal,          // Section "Top Mondial"
     itunesAfro,         // Section "Découvertes"
-    recentTracks: [...afrobeats.slice(0, 4), ...itunesAfro.slice(0, 2)],
+    customSongs,        // Section "Vos titres"
+    recentTracks: [...afrobeats.slice(0, 4), ...customSongs.slice(0, 2)],
   };
 };

@@ -54,9 +54,33 @@ You've successfully run and modified your React Native App. :partying_face:
 
 If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
 
-# Learn More
+# AfroSound Backend
 
-To learn more about React Native, take a look at the following resources:
+Ce projet inclut un backend conçu pour être hébergé sur **Vercel**. Il sert de pont sécurisé pour l'API Jamendo et la base de données Supabase.
+
+## Structure du Backend
+
+- `backend/api/index.js` : Point d'entrée de l'API (Express).
+- `vercel.json` : Configuration pour le déploiement sur Vercel.
+- `src/config.js` : Configuration du client pour pointer vers le backend.
+
+## Déploiement sur Vercel
+
+1. Connectez votre dépôt GitHub à Vercel.
+2. Ajoutez les variables d'environnement suivantes dans le tableau de bord Vercel :
+   - `JAMENDO_CLIENT_ID` : Votre ID client Jamendo.
+   - `SUPABASE_URL` : L'URL de votre projet Supabase.
+   - `SUPABASE_SERVICE_ROLE_KEY` : Votre clé de rôle de service Supabase.
+3. Déployez.
+4. Mettez à jour `BACKEND_URL` dans `src/config.js` avec l'URL fournie par Vercel.
+
+## Développement Local
+
+Pour tester le backend localement :
+1. Allez dans le dossier `backend`.
+2. Installez les dépendances : `npm install`.
+3. Lancez le serveur : `node api/index.js` (ou utilisez `vercel dev`).
+4. Assurez-vous que l'application pointe vers `http://10.0.2.2:3000` (pour Android) ou `http://localhost:3000`.
 
 - [React Native Website](https://reactnative.dev) - learn more about React Native.
 - [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.

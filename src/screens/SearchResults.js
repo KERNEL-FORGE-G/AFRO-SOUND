@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, FlatList, Image} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { supabase } from '../supabaseClient';
+import { searchAll } from '../services/musicApi';
 import { usePlayer } from '../context/PlayerContext';
 
 export default function SearchResults({route, navigation}) {
@@ -16,13 +16,14 @@ export default function SearchResults({route, navigation}) {
 
   const fetchResults = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('tracks')
-      .select('*, artists(name)')
-      .ilike('title', `%${query}%`);
-    
-    if (data) setResults(data);
-    setLoading(false);
+    try {
+      const data = await searchAll(query);
+      setResults(data);
+    } catch (e) {
+      console.warn('Search results error:', e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderItem = ({item}) => (
@@ -30,12 +31,30 @@ export default function SearchResults({route, navigation}) {
       style={styles.item}
       onPress={() => {
         playTrack(item, results);
-        navigation.navigate('NowPlaying', {track: {...item, artist: item.artists?.name}});
+        navigation.navigate('NowPlaying', {track: item});
       }}>
-      <Image source={{uri: item.cover_url}} style={styles.image} />
+      <Image 
+        source={
+          item.cover 
+            ? {uri: item.cover} 
+            : item.cover_url 
+            ? {uri: item.cover_url} 
+            : require('../../assets/images/logo.png')
+        } 
+        style={styles.image} 
+      />
       <View style={styles.info}>
         <Text style={styles.titleText}>{item.title}</Text>
-        <Text style={styles.artistText}>{item.artists?.name}</Text>
+        <View style={{flexDirection: 'row', alignItems: 'center'}}>
+          <Text style={styles.artistText}>{item.artist || item.artist_name || 'Artiste inconnu'}</Text>
+          <View style={[
+            styles.sourcePill,
+            item.source === 'itunes' && styles.itunesBadge,
+            item.source === 'jamendo' && styles.jamendoBadge
+          ]}>
+            <Text style={styles.sourceText}>{item.source}</Text>
+          </View>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -72,5 +91,15 @@ const styles = StyleSheet.create({
   info: {marginLeft: 16},
   titleText: {color: '#FDFBF7', fontSize: 16, fontWeight: 'bold'},
   artistText: {color: '#C4A484'},
+  sourcePill: {
+    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    backgroundColor: '#333',
+  },
+  itunesBadge: {backgroundColor: '#1D1A29'},
+  jamendoBadge: {backgroundColor: '#FF3333'},
+  sourceText: {color: '#FFF', fontSize: 10, fontWeight: 'bold', textTransform: 'uppercase'},
   emptyText: {color: '#FDFBF7', textAlign: 'center', marginTop: 50},
 });

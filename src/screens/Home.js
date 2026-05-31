@@ -19,6 +19,7 @@ export default function Home({navigation}) {
     afrobeats: [],
     topGlobal: [],
     itunesAfro: [],
+    customSongs: [],
     recentTracks: [],
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -31,18 +32,8 @@ export default function Home({navigation}) {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('tracks')
-        .select('*, artists(name)')
-        .limit(20);
-      
-      if (error) throw error;
-      setSections({
-        afrobeats: data || [],
-        topGlobal: data || [],
-        itunesAfro: [],
-        recentTracks: data || [],
-      });
+      const data = await getHomeData();
+      setSections(data);
     } catch (e) {
       console.error('Home fetchData error:', e.message);
     } finally {
@@ -64,7 +55,9 @@ export default function Home({navigation}) {
       onPress={() => handlePlay(item, queue)}>
       <Image
         source={
-          item.cover_url
+          item.cover
+            ? {uri: item.cover}
+            : item.cover_url
             ? {uri: item.cover_url}
             : require('../../assets/images/logo.png')
         }
@@ -82,17 +75,39 @@ export default function Home({navigation}) {
       style={styles.card}
       activeOpacity={0.9}
       onPress={() => handlePlay(p, queue)}>
-      <Image
-        source={
-          p.cover_url ? {uri: p.cover_url} : require('../../assets/images/logo.png')
-        }
-        style={styles.cardImage}
-      />
+      <View>
+        <Image
+          source={
+            p.cover
+              ? {uri: p.cover}
+              : p.cover_url
+              ? {uri: p.cover_url}
+              : require('../../assets/images/logo.png')
+          }
+          style={styles.cardImage}
+        />
+        <View
+          style={[
+            styles.sourceBadge,
+            p.source === 'itunes' && styles.itunesBadge,
+            p.source === 'jamendo' && styles.jamendoBadge,
+          ]}>
+          <Text style={styles.sourceBadgeText}>
+            {p.source === 'itunes'
+              ? '🍎'
+              : p.source === 'deezer'
+              ? '🎵'
+              : p.source === 'jamendo'
+              ? '🎸'
+              : '🏠'}
+          </Text>
+        </View>
+      </View>
       <Text style={styles.cardTitle} numberOfLines={1}>
         {p.title}
       </Text>
       <Text style={styles.cardArtist} numberOfLines={1}>
-        {p.artists?.name}
+        {p.artist || p.artist_name || 'Artiste inconnu'}
       </Text>
     </TouchableOpacity>
   );
@@ -143,6 +158,23 @@ export default function Home({navigation}) {
                 renderRecentCard(item, i, sections.recentTracks),
               )}
             </View>
+
+            {/* ── Vos titres (Supabase) ── */}
+            {sections.customSongs.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, {marginTop: 28}]}>
+                  🏠 Vos titres (Supabase)
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+                  {sections.customSongs.map((p, i) =>
+                    renderTrackCard(p, i, sections.customSongs),
+                  )}
+                </ScrollView>
+              </>
+            )}
 
             {/* ── Afrobeats Deezer ── */}
             <Text style={styles.sectionTitle}>🔥 Afrobeats</Text>
@@ -269,5 +301,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   itunesBadge: {backgroundColor: 'rgba(29,26,41,0.85)'},
+  jamendoBadge: {backgroundColor: 'rgba(255,51,51,0.85)'},
   sourceBadgeText: {fontSize: 12},
 });
