@@ -11,7 +11,6 @@ import {
 import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {getHomeData} from '../services/musicApi';
-import { supabase } from '../supabaseClient';
 import {usePlayer} from '../context/PlayerContext';
 
 export default function Home({navigation}) {

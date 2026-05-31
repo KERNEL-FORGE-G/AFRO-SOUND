@@ -61,13 +61,28 @@ app.get('/api/jamendo/search', async (req, res) => {
 // Route pour récupérer les chansons depuis Supabase
 app.get('/api/songs', async (req, res) => {
   try {
-    const { data, error } = await supabase
+    // On essaie d'abord 'songs', sinon 'tracks'
+    let { data, error } = await supabase
       .from('songs')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    res.json(data);
+    if (error || !data || data.length === 0) {
+      const { data: tracksData, error: tracksError } = await supabase
+        .from('tracks')
+        .select('*, artists(name)')
+        .order('created_at', { ascending: false });
+      
+      if (!tracksError) {
+        data = tracksData.map(t => ({
+          ...t,
+          artist: t.artists?.name || t.artist,
+          cover: t.cover_url || t.cover
+        }));
+      }
+    }
+
+    res.json(data || []);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
