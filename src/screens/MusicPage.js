@@ -15,7 +15,7 @@ export default function MusicPage({route, navigation}) {
   const {item} = route.params || {};
   const title = item?.title || 'Titre inconnu';
   const artist = item?.artist || 'Artiste inconnu';
-  const image = item?.image || require('../../assets/images/music_page.png');
+  const color = item?.color || Colors.surface;
 
   return (
     <View style={theme.container}>
@@ -26,7 +26,7 @@ export default function MusicPage({route, navigation}) {
       </View>
 
       <View style={styles.artContainer}>
-        <Image source={image} style={styles.art} />
+        <View style={[styles.art, {backgroundColor: color}]} />
       </View>
 
       <View style={{paddingHorizontal: 20}}>
@@ -66,7 +66,12 @@ export default function MusicPage({route, navigation}) {
 const styles = StyleSheet.create({
   artContainer: {padding: 24, alignItems: 'center'},
   art: {width: 280, height: 280, borderRadius: 24}, // Plus grand et arrondi
-  trackTitle: {color: '#FDFBF7', fontSize: 24, fontWeight: '800', marginTop: 12},
+  trackTitle: {
+    color: '#FDFBF7',
+    fontSize: 24,
+    fontWeight: '800',
+    marginTop: 12,
+  },
   trackArtist: {color: '#C4A484', fontSize: 16, marginTop: 4},
   controls: {
     flexDirection: 'row',

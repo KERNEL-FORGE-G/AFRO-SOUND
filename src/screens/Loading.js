@@ -6,13 +6,17 @@ export default function Loading() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/images/logo.png')}
+        source={require('../../logo.png')}
         style={styles.logo}
         resizeMode="contain"
       />
       <Text style={styles.brand}>AFRO SOUND</Text>
       <Text style={styles.tagline}>Écoute tes racines</Text>
-      <ActivityIndicator size="large" color={Colors.primary} style={styles.spinner} />
+      <ActivityIndicator
+        size="large"
+        color={Colors.primary}
+        style={styles.spinner}
+      />
     </View>
   );
 }

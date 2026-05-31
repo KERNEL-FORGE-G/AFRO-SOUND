@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import theme, {Colors} from '../theme';
-import { supabase } from '../supabaseClient';
+import {supabase} from '../supabaseClient';
 
 export default function Register({navigation}) {
   const [email, setEmail] = useState('');
@@ -24,7 +24,7 @@ export default function Register({navigation}) {
     }
 
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
+    const {data, error} = await supabase.auth.signUp({
       email: email,
       password: password,
       options: {
@@ -35,9 +35,12 @@ export default function Register({navigation}) {
     });
 
     if (error) {
-      Alert.alert('Erreur d\'inscription', error.message);
+      Alert.alert("Erreur d'inscription", error.message);
     } else {
-      Alert.alert('Succès', 'Vérifiez votre boîte mail pour confirmer votre compte !');
+      Alert.alert(
+        'Succès',
+        'Vérifiez votre boîte mail pour confirmer votre compte !',
+      );
       navigation.replace('Home');
     }
     setLoading(false);
@@ -66,7 +69,7 @@ export default function Register({navigation}) {
           autoCapitalize="none"
           keyboardType="email-address"
         />
-        
+
         <TextInput
           placeholder="Mot de passe"
           placeholderTextColor="#A69485"
@@ -87,8 +90,8 @@ export default function Register({navigation}) {
             <Text style={styles.buttonText}>S'inscrire</Text>
           )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={{marginTop: 20, alignItems: 'center'}}
           onPress={() => navigation.navigate('Home')}>
           <Text style={{color: '#C4A484'}}>Continuer sans compte</Text>

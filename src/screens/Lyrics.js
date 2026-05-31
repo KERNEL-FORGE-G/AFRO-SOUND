@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, StyleSheet, ScrollView, Image} from 'react-native';
-import theme from '../theme';
+import theme, {Colors} from '../theme';
 
 const sampleLyrics =
   'Couplet 1\nVoici les paroles de la chanson...\n\nRefrain\nLa la la...';
@@ -9,9 +9,13 @@ export default function Lyrics() {
   return (
     <View style={theme.container}>
       <View style={{alignItems: 'center', paddingTop: 24}}>
-        <Image
-          source={require('../../assets/images/lyrics.png')}
-          style={{width: 120, height: 120, borderRadius: 12}}
+        <View
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 12,
+            backgroundColor: Colors.surface,
+          }}
         />
       </View>
       <ScrollView style={{padding: 20}}>

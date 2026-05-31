@@ -1,16 +1,18 @@
 {
   "name": "afrosound",
   "version": "0.0.1",
-  "private": true,
   "scripts": {
-    "android": "bash scripts/setup-android-sdk.sh && react-native run-android",
+    "start": "react-native start --reset-cache",
+    "android": "bash scripts/setup-android-sdk.sh && react-native run-android --reset-cache",
+    "build:debug": "cd android && ./gradlew assembleDebug",
+    "build:release": "cd android && ./gradlew assembleRelease",
     "setup:sdk": "bash scripts/setup-android-sdk.sh",
     "logo": "react-native set-icon --path './assets/images/logo.png' --platform android",
     "lint": "eslint .",
-    "start": "react-native start",
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
     "@react-native-community/slider": "^5.2.0",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.7",
@@ -29,7 +31,8 @@
     "react-native-screens": "~3.22.0",
     "react-native-track-player": "^4.1.2",
     "react-native-url-polyfill": "^3.0.0",
-    "react-native-vector-icons": "^10.3.0"
+    "react-native-vector-icons": "^10.3.0",
+    "rn-fetch-blob": "^0.12.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

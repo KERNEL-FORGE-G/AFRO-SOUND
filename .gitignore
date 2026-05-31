@@ -77,3 +77,4 @@ assets/images/*.jpg
 assets/images/*.png
 
 assets/videos/
+.vercel

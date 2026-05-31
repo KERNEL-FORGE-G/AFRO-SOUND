@@ -1,17 +1,20 @@
 import {StyleSheet} from 'react-native';
 
 export const Colors = {
-  background: '#0A140A',
-  surface: '#1A2E1A',
-  surfaceLight: '#243824',
-  primary: '#84CC16',
-  primaryDark: '#65A30D',
-  accent: '#F59E0B',
-  accentDark: '#D97706',
-  text: '#FDFBF7',
-  muted: '#A3B18A',
-  card: '#1A2E1A',
-  border: '#2D4A2D',
+  // Palette terreuse
+  background: '#2F2620', // Brun profond (terre)
+  surface: '#4A3B30', // Brun moyen
+  surfaceLight: '#6B5A4D', // Brun clair
+
+  // Couleurs chaudes
+  primary: '#C17A45', // Ocre/Argile
+  primaryDark: '#A0522D', // Terracotta
+  accent: '#D4AF37', // Or (pour les détails)
+
+  text: '#F4E4BC', // Sable (plus doux pour les yeux)
+  muted: '#A89F95',
+  card: '#4A3B30',
+  border: '#6B5A4D',
 };
 
 export default StyleSheet.create({

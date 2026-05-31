@@ -1,52 +1,41 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ImageBackground,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import theme, {Colors} from '../theme';
+import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
+import {Colors} from '../theme';
 
 export default function GetStarted({navigation}) {
   return (
     <View style={styles.container}>
-      <ImageBackground
-        source={require('../../assets/images/get_started.png')}
-        style={styles.bg}
-        resizeMode="cover">
-        <View style={styles.overlay}>
-          <View style={styles.contentContainer}>
-            <Image
-              source={require('../../assets/images/logo.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>AFRO SOUND,{'\n'}la musique réinventée.</Text>
-            <Text style={styles.subtitle}>
-              L'essence du son africain et mondial. Sans limite.
-            </Text>
+      <View style={styles.overlay}>
+        <View style={styles.contentContainer}>
+          {/* <Image
+            source={require('../../logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          /> */}
+          <Text style={styles.title}>
+            AFRO SOUND,{'\n'}la musique réinventée.
+          </Text>
+          <Text style={styles.subtitle}>
+            L'essence du son africain et mondial. Sans limite.
+          </Text>
 
-            <TouchableOpacity
-              style={styles.button}
-              activeOpacity={0.8}
-              onPress={() => navigation.replace('ChooseMode')}>
-              <Text style={styles.buttonText}>Commencer</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.button}
+            activeOpacity={0.8}
+            onPress={() => navigation.replace('ChooseMode')}>
+            <Text style={styles.buttonText}>Commencer</Text>
+          </TouchableOpacity>
         </View>
-      </ImageBackground>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: Colors.background},
-  bg: {flex: 1},
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Assombrit l'image pour la lisibilité
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   contentContainer: {
@@ -60,7 +49,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   title: {
-    color: '#FDFBF7',
+    color: Colors.text,
     fontSize: 42,
     fontWeight: '800',
     marginBottom: 12,
@@ -75,7 +64,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: Colors.primary,
     height: 60,
-    borderRadius: 30, // Bouton en forme de pilule
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.primary,

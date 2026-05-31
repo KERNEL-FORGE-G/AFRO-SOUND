@@ -8,21 +8,17 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {Colors} from '../theme';
 
-const recentSearches = [
-  'Happier Than Ever',
-  'Drake',
-  'Mix Pop',
-  'Podcasts Humour',
-];
+const providers = ['all', 'jamendo', 'itunes', 'deezer'];
 
 export default function Search({navigation}) {
   const [query, setQuery] = useState('');
+  const [source, setSource] = useState('all');
 
   const handleSearch = () => {
-    // On ne navigue que si le champ n'est pas vide
     if (query.trim().length > 0) {
-      navigation.navigate('SearchResults', {query});
+      navigation.navigate('SearchResults', {query, source});
     }
   };
 
@@ -38,7 +34,7 @@ export default function Search({navigation}) {
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="Que souhaitez-vous écouter sur AFRO SOUND ?"
+          placeholder="Que souhaitez-vous écouter ?"
           placeholderTextColor="#A69485"
           value={query}
           onChangeText={setQuery}
@@ -47,22 +43,22 @@ export default function Search({navigation}) {
         />
       </View>
 
-      <Text style={styles.recentTitle}>Recherches récentes</Text>
-      <ScrollView
-        style={styles.recentList}
-        showsVerticalScrollIndicator={false}>
-        {recentSearches.map((item, index) => (
+      <View style={styles.filterContainer}>
+        {providers.map(p => (
           <TouchableOpacity
-            key={index}
-            style={styles.recentItem}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('SearchResults', {query: item})}>
-            <Ionicons name="time-outline" size={24} color="#C4A484" />
-            <Text style={styles.recentItemText}>{item}</Text>
-            <Ionicons name="close-outline" size={24} color="#C4A484" />
+            key={p}
+            style={[styles.filterBtn, source === p && styles.activeFilter]}
+            onPress={() => setSource(p)}>
+            <Text
+              style={[
+                styles.filterText,
+                source === p && styles.activeFilterText,
+              ]}>
+              {p.toUpperCase()}
+            </Text>
           </TouchableOpacity>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -77,28 +73,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
   },
   searchIcon: {marginRight: 12},
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#181411',
-    padding: 0,
-    fontWeight: '500',
+  searchInput: {flex: 1, fontSize: 16, color: '#181411'},
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
   },
-  recentTitle: {
-    color: '#FDFBF7',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 32,
-    marginBottom: 16,
+  filterBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#333',
   },
-  recentList: {flex: 1},
-  recentItem: {flexDirection: 'row', alignItems: 'center', marginBottom: 20},
-  recentItemText: {flex: 1, color: '#FDFBF7', fontSize: 16, marginLeft: 16},
+  activeFilter: {backgroundColor: Colors.primary},
+  filterText: {color: '#FFF', fontSize: 12, fontWeight: 'bold'},
+  activeFilterText: {color: Colors.background},
 });

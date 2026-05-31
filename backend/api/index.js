@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
+const {createClient} = require('@supabase/supabase-js');
 require('dotenv').config();
 
 const app = express();
@@ -11,22 +11,22 @@ app.use(express.json());
 // Initialisation Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
 );
 
 const JAMENDO_CLIENT_ID = process.env.JAMENDO_CLIENT_ID;
 
 // Route de test
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'AfroSound Backend is running' });
+  res.json({status: 'ok', message: 'AfroSound Backend is running'});
 });
 
 // Proxy Jamendo
 app.get('/api/jamendo/search', async (req, res) => {
-  const { query, limit = 10 } = req.query;
-  
+  const {query, limit = 10} = req.query;
+
   if (!query) {
-    return res.status(400).json({ error: 'Query parameter is required' });
+    return res.status(400).json({error: 'Query parameter is required'});
   }
 
   try {
@@ -36,8 +36,8 @@ app.get('/api/jamendo/search', async (req, res) => {
         format: 'json',
         limit: limit,
         namesearch: query,
-        include: 'musicinfo'
-      }
+        include: 'musicinfo',
+      },
     });
 
     const tracks = response.data.results.map(track => ({
@@ -48,13 +48,13 @@ app.get('/api/jamendo/search', async (req, res) => {
       audioUrl: track.audio,
       cover: track.album_image,
       source: 'jamendo',
-      duration: track.duration
+      duration: track.duration,
     }));
 
     res.json(tracks);
   } catch (error) {
     console.error('Jamendo API error:', error.message);
-    res.status(500).json({ error: 'Failed to fetch from Jamendo' });
+    res.status(500).json({error: 'Failed to fetch from Jamendo'});
   }
 });
 
@@ -62,29 +62,29 @@ app.get('/api/jamendo/search', async (req, res) => {
 app.get('/api/songs', async (req, res) => {
   try {
     // On essaie d'abord 'songs', sinon 'tracks'
-    let { data, error } = await supabase
+    let {data, error} = await supabase
       .from('songs')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', {ascending: false});
 
     if (error || !data || data.length === 0) {
-      const { data: tracksData, error: tracksError } = await supabase
+      const {data: tracksData, error: tracksError} = await supabase
         .from('tracks')
         .select('*, artists(name)')
-        .order('created_at', { ascending: false });
-      
+        .order('created_at', {ascending: false});
+
       if (!tracksError) {
         data = tracksData.map(t => ({
           ...t,
           artist: t.artists?.name || t.artist,
-          cover: t.cover_url || t.cover
+          cover: t.cover_url || t.cover,
         }));
       }
     }
 
     res.json(data || []);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({error: error.message});
   }
 });
 
