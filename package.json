@@ -1,6 +1,7 @@
 {
   "name": "afrosound",
   "version": "0.0.1",
+<<<<<<< HEAD
   "private": true,
   "scripts": {
     "android": "bash scripts/setup-android-sdk.sh && react-native run-android",
@@ -8,6 +9,16 @@
     "logo": "react-native set-icon --path './assets/images/logo.png' --platform android",
     "lint": "eslint .",
     "start": "react-native start",
+=======
+  "scripts": {
+    "start": "react-native start --reset-cache",
+    "android": "bash scripts/setup-android-sdk.sh && react-native run-android --reset-cache",
+    "build:debug": "cd android && ./gradlew assembleDebug",
+    "build:release": "cd android && ./gradlew assembleRelease",
+    "setup:sdk": "bash scripts/setup-android-sdk.sh",
+    "logo": "react-native set-icon --path './assets/images/logo.png' --platform android",
+    "lint": "eslint .",
+>>>>>>> upstream/main
     "test": "jest"
   },
   "dependencies": {
@@ -16,7 +27,10 @@
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.7",
     "@react-navigation/stack": "^6.3.16",
+<<<<<<< HEAD
     "@reduxjs/toolkit": "^2.12.0",
+=======
+>>>>>>> upstream/main
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "axios": "^1.16.1",
@@ -32,8 +46,12 @@
     "react-native-track-player": "^4.1.2",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-vector-icons": "^10.3.0",
+<<<<<<< HEAD
     "react-redux": "^9.3.0",
     "redux-persist": "^6.0.0"
+=======
+    "rn-fetch-blob": "^0.12.0"
+>>>>>>> upstream/main
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

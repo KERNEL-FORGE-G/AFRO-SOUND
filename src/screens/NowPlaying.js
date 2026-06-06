@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
@@ -54,6 +55,33 @@ export default function NowPlaying({navigation, route}) {
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
+=======
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, Alert, TouchableOpacity} from 'react-native';
+import Slider from '@react-native-community/slider';
+import {Colors} from '../theme';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import {usePlayer, useProgress, State} from '../context/PlayerContext';
+import TrackPlayer from 'react-native-track-player';
+
+export default function NowPlaying({navigation, route}) {
+  const {track} = route.params;
+  const {downloadTrack, skipToNext, skipToPrevious} = usePlayer();
+  const [isLiked, setIsLiked] = useState(false);
+
+  const {position, duration} = useProgress();
+  const percentage = duration > 0 ? Math.round((position / duration) * 100) : 0;
+
+  const isPlaying = true; // Simplified for this iteration
+
+  const toggleLike = () => {
+    setIsLiked(!isLiked);
+    Alert.alert(
+      'Favoris',
+      isLiked ? 'Retiré des favoris' : 'Ajouté aux favoris',
+    );
+  };
+>>>>>>> upstream/main
 
   const formatTime = secs => {
     const m = Math.floor(secs / 60);
@@ -61,6 +89,7 @@ export default function NowPlaying({navigation, route}) {
     return `${m}:${s < 10 ? '0' : ''}${s}`;
   };
 
+<<<<<<< HEAD
   const bottomActions = [
     {icon: 'heart-outline', label: 'Like', onPress: () => setIsLiked(!isLiked)},
     {icon: 'text-outline', label: 'Paroles', onPress: () => navigation.navigate('Lyrics')},
@@ -82,10 +111,28 @@ export default function NowPlaying({navigation, route}) {
           style={styles.headerIcon}
           onPress={() => Alert.alert('Options', 'Menu des options de la piste.')}>
           <Ionicons name="ellipsis-vertical" size={24} color={Colors.primary} />
+=======
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerIcon}>
+          <Ionicons name="chevron-down" size={28} color={Colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Lecture en cours</Text>
+        <TouchableOpacity onPress={toggleLike} style={styles.headerIcon}>
+          <Ionicons
+            name={isLiked ? 'heart' : 'heart-outline'}
+            size={24}
+            color={isLiked ? Colors.primary : Colors.text}
+          />
+>>>>>>> upstream/main
         </TouchableOpacity>
       </View>
 
       <View style={styles.artContainer}>
+<<<<<<< HEAD
         <Animated.Image
           source={track.cover_url ? {uri: track.cover_url} : require('../../logo.png')}
           style={[styles.art, {transform: [{rotate: spin}]}]}
@@ -108,6 +155,14 @@ export default function NowPlaying({navigation, route}) {
             </View>
           </View>
         </View>
+=======
+        <View style={styles.art} />
+      </View>
+
+      <View style={styles.trackInfo}>
+        <Text style={styles.trackTitle}>{track.title}</Text>
+        <Text style={styles.trackArtist}>{track.artist}</Text>
+>>>>>>> upstream/main
       </View>
 
       <View style={styles.progressSection}>
@@ -116,18 +171,28 @@ export default function NowPlaying({navigation, route}) {
           minimumValue={0}
           maximumValue={duration}
           value={position}
+<<<<<<< HEAD
           onSlidingComplete={val => setPosition(Math.floor(val))}
           minimumTrackTintColor={Colors.primary}
           maximumTrackTintColor={Colors.accent}
+=======
+          minimumTrackTintColor={Colors.primary}
+          maximumTrackTintColor={Colors.surfaceLight}
+>>>>>>> upstream/main
           thumbTintColor={Colors.primary}
         />
         <View style={styles.timeRow}>
           <Text style={styles.timeText}>{formatTime(position)}</Text>
+<<<<<<< HEAD
+=======
+          <Text style={styles.timeText}>{percentage}%</Text>
+>>>>>>> upstream/main
           <Text style={styles.timeText}>{formatTime(duration)}</Text>
         </View>
       </View>
 
       <View style={styles.controls}>
+<<<<<<< HEAD
         <TouchableOpacity
           onPress={() => Alert.alert('Mode Aléatoire', 'Lecture aléatoire activée/désactivée')}>
           <Ionicons name="shuffle" size={26} color={Colors.primary} />
@@ -142,10 +207,19 @@ export default function NowPlaying({navigation, route}) {
         <TouchableOpacity
           style={styles.bigBtn}
           onPress={() => setIsPlaying(!isPlaying)}>
+=======
+        <TouchableOpacity onPress={skipToPrevious}>
+          <Ionicons name="play-skip-back" size={32} color={Colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => TrackPlayer.play()}
+          style={styles.bigBtn}>
+>>>>>>> upstream/main
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
             size={40}
             color={Colors.background}
+<<<<<<< HEAD
             style={{marginLeft: isPlaying ? 0 : 4}}
           />
         </TouchableOpacity>
@@ -174,15 +248,38 @@ export default function NowPlaying({navigation, route}) {
           </TouchableOpacity>
         ))}
       </View>
+=======
+          />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={skipToNext}>
+          <Ionicons name="play-skip-forward" size={32} color={Colors.text} />
+        </TouchableOpacity>
+      </View>
+
+      <TouchableOpacity
+        onPress={() => downloadTrack(track)}
+        style={styles.downloadBtn}>
+        <Ionicons name="download-outline" size={24} color={Colors.primary} />
+      </TouchableOpacity>
+>>>>>>> upstream/main
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+<<<<<<< HEAD
+=======
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingHorizontal: 20,
+  },
+>>>>>>> upstream/main
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+<<<<<<< HEAD
     paddingHorizontal: 16,
     paddingTop: 48,
     paddingBottom: 8,
@@ -299,4 +396,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4,
   },
+=======
+    paddingTop: 50,
+  },
+  headerTitle: {color: Colors.text, fontWeight: 'bold'},
+  headerIcon: {width: 40, alignItems: 'center'},
+  artContainer: {marginTop: 40, alignItems: 'center'},
+  art: {
+    width: 300,
+    height: 300,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+  },
+  trackInfo: {marginTop: 30, alignItems: 'center'},
+  trackTitle: {color: Colors.text, fontSize: 24, fontWeight: '800'},
+  trackArtist: {color: Colors.muted, fontSize: 16, marginTop: 4},
+  progressSection: {marginTop: 30},
+  slider: {width: '100%', height: 40},
+  timeRow: {flexDirection: 'row', justifyContent: 'space-between'},
+  timeText: {color: Colors.muted, fontSize: 12},
+  controls: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
+    marginTop: 30,
+  },
+  bigBtn: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: Colors.text,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  downloadBtn: {alignItems: 'center', marginTop: 20},
+>>>>>>> upstream/main
 });

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+<<<<<<< HEAD
 import {getHomeData} from '../services/musicApi';
 import {usePlayer} from '../context/PlayerContext';
 
@@ -21,6 +22,13 @@ export default function Home({navigation}) {
     customSongs: [],
     recentTracks: [],
   });
+=======
+import {getSupabaseSongs} from '../services/musicApi';
+import {usePlayer} from '../context/PlayerContext';
+
+export default function Home({navigation}) {
+  const [songs, setSongs] = useState([]);
+>>>>>>> upstream/main
   const [isLoading, setIsLoading] = useState(true);
   const {playTrack} = usePlayer();
 
@@ -31,8 +39,13 @@ export default function Home({navigation}) {
   const fetchData = async () => {
     try {
       setIsLoading(true);
+<<<<<<< HEAD
       const data = await getHomeData();
       setSections(data);
+=======
+      const data = await getSupabaseSongs();
+      setSongs(data);
+>>>>>>> upstream/main
     } catch (e) {
       console.error('Home fetchData error:', e.message);
     } finally {
@@ -45,6 +58,7 @@ export default function Home({navigation}) {
     navigation.navigate('NowPlaying', {track});
   };
 
+<<<<<<< HEAD
   const renderRecentCard = (item, index, queue) => (
     <TouchableOpacity
       key={item.id || index}
@@ -101,17 +115,34 @@ export default function Home({navigation}) {
           </Text>
         </View>
       </View>
+=======
+  const renderTrackCard = (p, queue) => (
+    <TouchableOpacity
+      key={p.id}
+      style={styles.card}
+      activeOpacity={0.9}
+      onPress={() => handlePlay(p, queue)}>
+      <Image
+        source={p.cover ? {uri: p.cover} : require('../../logo.png')}
+        style={styles.cardImage}
+      />
+>>>>>>> upstream/main
       <Text style={styles.cardTitle} numberOfLines={1}>
         {p.title}
       </Text>
       <Text style={styles.cardArtist} numberOfLines={1}>
+<<<<<<< HEAD
         {p.artist || p.artist_name || 'Artiste inconnu'}
+=======
+        {p.artist || 'Artiste inconnu'}
+>>>>>>> upstream/main
       </Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={[theme.container, styles.mainContainer]}>
+<<<<<<< HEAD
       <ScrollView contentContainerStyle={{paddingBottom: 140}}>
         {/* Header */}
         <View style={styles.header}>
@@ -181,6 +212,31 @@ export default function Home({navigation}) {
           </>
         )}
       </ScrollView>
+=======
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Text style={styles.greeting}>Bibliothèque</Text>
+          <TouchableOpacity onPress={fetchData} activeOpacity={0.8}>
+            <Ionicons name="refresh-outline" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator
+          size="large"
+          color={Colors.primary}
+          style={{marginTop: 80}}
+        />
+      ) : (
+        <ScrollView contentContainerStyle={{padding: 16}}>
+          <Text style={styles.sectionTitle}>Vos titres</Text>
+          <View style={styles.grid}>
+            {songs.map(p => renderTrackCard(p, songs))}
+          </View>
+        </ScrollView>
+      )}
+>>>>>>> upstream/main
     </View>
   );
 }
@@ -188,6 +244,7 @@ export default function Home({navigation}) {
 const styles = StyleSheet.create({
   mainContainer: {flex: 1, backgroundColor: Colors.background},
   header: {paddingHorizontal: 16, paddingTop: 40, paddingBottom: 16},
+<<<<<<< HEAD
   headerTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20},
   profilePic: {width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.surface, marginRight: 12},
   greeting: {color: Colors.text, fontSize: 22, fontWeight: 'bold', letterSpacing: -0.5},
@@ -213,4 +270,37 @@ const styles = StyleSheet.create({
   bannerLabel: {color: Colors.primary, fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6},
   bannerHeadline: {color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4},
   bannerNote: {color: Colors.muted, fontSize: 12, lineHeight: 18},
+=======
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  greeting: {color: Colors.text, fontSize: 24, fontWeight: 'bold'},
+  sectionTitle: {
+    color: Colors.text,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {width: '47%', marginBottom: 16},
+  cardImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+  },
+  cardTitle: {
+    color: Colors.text,
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cardArtist: {color: Colors.muted, fontSize: 12},
+>>>>>>> upstream/main
 });

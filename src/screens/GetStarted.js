@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, {useState, useEffect} from 'react';
 import {
   View,
@@ -51,16 +52,53 @@ export default function GetStarted({navigation}) {
           </View>
         </View>
       </ImageBackground>
+=======
+import React from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
+import {Colors} from '../theme';
+
+export default function GetStarted({navigation}) {
+  return (
+    <View style={styles.container}>
+      <View style={styles.overlay}>
+        <View style={styles.contentContainer}>
+          {/* <Image
+            source={require('../../logo.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          /> */}
+          <Text style={styles.title}>
+            AFRO SOUND,{'\n'}la musique réinventée.
+          </Text>
+          <Text style={styles.subtitle}>
+            L'essence du son africain et mondial. Sans limite.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.button}
+            activeOpacity={0.8}
+            onPress={() => navigation.replace('ChooseMode')}>
+            <Text style={styles.buttonText}>Commencer</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+>>>>>>> upstream/main
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: Colors.background},
+<<<<<<< HEAD
   bg: {flex: 1},
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)', // Assombrit l'image pour la lisibilité
+=======
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+>>>>>>> upstream/main
     justifyContent: 'flex-end',
   },
   contentContainer: {
@@ -74,7 +112,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   title: {
+<<<<<<< HEAD
     color: '#FDFBF7',
+=======
+    color: Colors.text,
+>>>>>>> upstream/main
     fontSize: 42,
     fontWeight: '800',
     marginBottom: 12,
@@ -89,7 +131,11 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: Colors.primary,
     height: 60,
+<<<<<<< HEAD
     borderRadius: 30, // Bouton en forme de pilule
+=======
+    borderRadius: 30,
+>>>>>>> upstream/main
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: Colors.primary,
