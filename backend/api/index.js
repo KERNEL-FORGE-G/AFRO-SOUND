@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const {createClient} = require('@supabase/supabase-js');
+const DASHBOARD_HTML = require('./dashboard');
 require('dotenv').config();
 
 const app = express();
@@ -63,9 +64,36 @@ function normalizeAudius(track, host) {
   };
 }
 
+// Panel de surveillance + testeur d'API (page web).
+app.get(['/', '/dashboard'], (req, res) => {
+  res.set('Content-Type', 'text/html; charset=utf-8').send(DASHBOARD_HTML);
+});
+
 // Route de test
 app.get('/api/health', (req, res) => {
   res.json({status: 'ok', message: 'AfroSound Backend is running'});
+});
+
+// État du backend (sans exposer de secrets) — alimente le panel.
+app.get('/api/status', async (req, res) => {
+  let audiusReachable = false;
+  try {
+    audiusReachable = Boolean(await getAudiusHost());
+  } catch (e) {
+    audiusReachable = false;
+  }
+  res.json({
+    status: 'ok',
+    uptimeSeconds: Math.round(process.uptime()),
+    node: process.version,
+    env: {
+      supabase: Boolean(supabase),
+      audiusAppName: AUDIUS_APP_NAME,
+      jamendo: Boolean(JAMENDO_CLIENT_ID),
+    },
+    audiusReachable,
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Proxy Audius — recherche
