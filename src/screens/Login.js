@@ -128,6 +128,14 @@ export default function LoginScreen({navigation}) {
               style={{marginTop: 20}}
             />
           )}
+
+          <TouchableOpacity
+            style={{marginTop: 20, alignItems: 'center'}}
+            onPress={() => navigation.navigate('Register')}>
+            <Text style={{color: Colors.primary, fontWeight: 'bold'}}>
+              Pas encore de compte ? S'inscrire
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.infoSection}>
