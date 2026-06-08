@@ -17,6 +17,11 @@ import Search from '../screens/Search';
 import Library from '../screens/Library';
 import SearchResults from '../screens/SearchResults';
 import CreatePlaylist from '../screens/CreatePlaylist';
+<<<<<<< HEAD
+import Login from '../screens/Login';
+import GroupPlaylist from '../screens/GroupPlaylist';
+=======
+>>>>>>> upstream/main
 import {Colors} from '../theme';
 
 const Stack = createStackNavigator();
@@ -73,6 +78,11 @@ export default function AppNavigator() {
         <Stack.Screen name="GetStarted" component={GetStarted} />
         <Stack.Screen name="ChooseMode" component={ChooseMode} />
         <Stack.Screen name="Loading" component={Loading} />
+<<<<<<< HEAD
+        <Stack.Screen name="Login" component={Login} />
+        <Stack.Screen name="GroupPlaylist" component={GroupPlaylist} />
+=======
+>>>>>>> upstream/main
         <Stack.Screen name="Home" component={MainTabs} />
         <Stack.Screen name="MusicPage" component={MusicPage} />
         <Stack.Screen name="NowPlaying" component={NowPlaying} />

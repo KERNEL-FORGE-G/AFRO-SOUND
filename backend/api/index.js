@@ -1,7 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+<<<<<<< HEAD
+const { createClient } = require('@supabase/supabase-js');
+=======
 const {createClient} = require('@supabase/supabase-js');
+>>>>>>> upstream/main
 require('dotenv').config();
 
 const app = express();
@@ -11,22 +15,37 @@ app.use(express.json());
 // Initialisation Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL || '',
+<<<<<<< HEAD
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+=======
   process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+>>>>>>> upstream/main
 );
 
 const JAMENDO_CLIENT_ID = process.env.JAMENDO_CLIENT_ID;
 
 // Route de test
 app.get('/api/health', (req, res) => {
+<<<<<<< HEAD
+  res.json({ status: 'ok', message: 'AfroSound Backend is running' });
+=======
   res.json({status: 'ok', message: 'AfroSound Backend is running'});
+>>>>>>> upstream/main
 });
 
 // Proxy Jamendo
 app.get('/api/jamendo/search', async (req, res) => {
+<<<<<<< HEAD
+  const { query, limit = 10 } = req.query;
+  
+  if (!query) {
+    return res.status(400).json({ error: 'Query parameter is required' });
+=======
   const {query, limit = 10} = req.query;
 
   if (!query) {
     return res.status(400).json({error: 'Query parameter is required'});
+>>>>>>> upstream/main
   }
 
   try {
@@ -36,8 +55,13 @@ app.get('/api/jamendo/search', async (req, res) => {
         format: 'json',
         limit: limit,
         namesearch: query,
+<<<<<<< HEAD
+        include: 'musicinfo'
+      }
+=======
         include: 'musicinfo',
       },
+>>>>>>> upstream/main
     });
 
     const tracks = response.data.results.map(track => ({
@@ -48,13 +72,21 @@ app.get('/api/jamendo/search', async (req, res) => {
       audioUrl: track.audio,
       cover: track.album_image,
       source: 'jamendo',
+<<<<<<< HEAD
+      duration: track.duration
+=======
       duration: track.duration,
+>>>>>>> upstream/main
     }));
 
     res.json(tracks);
   } catch (error) {
     console.error('Jamendo API error:', error.message);
+<<<<<<< HEAD
+    res.status(500).json({ error: 'Failed to fetch from Jamendo' });
+=======
     res.status(500).json({error: 'Failed to fetch from Jamendo'});
+>>>>>>> upstream/main
   }
 });
 
@@ -62,6 +94,19 @@ app.get('/api/jamendo/search', async (req, res) => {
 app.get('/api/songs', async (req, res) => {
   try {
     // On essaie d'abord 'songs', sinon 'tracks'
+<<<<<<< HEAD
+    let { data, error } = await supabase
+      .from('songs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data || data.length === 0) {
+      const { data: tracksData, error: tracksError } = await supabase
+        .from('tracks')
+        .select('*, artists(name)')
+        .order('created_at', { ascending: false });
+      
+=======
     let {data, error} = await supabase
       .from('songs')
       .select('*')
@@ -73,18 +118,27 @@ app.get('/api/songs', async (req, res) => {
         .select('*, artists(name)')
         .order('created_at', {ascending: false});
 
+>>>>>>> upstream/main
       if (!tracksError) {
         data = tracksData.map(t => ({
           ...t,
           artist: t.artists?.name || t.artist,
+<<<<<<< HEAD
+          cover: t.cover_url || t.cover
+=======
           cover: t.cover_url || t.cover,
+>>>>>>> upstream/main
         }));
       }
     }
 
     res.json(data || []);
   } catch (error) {
+<<<<<<< HEAD
+    res.status(500).json({ error: error.message });
+=======
     res.status(500).json({error: error.message});
+>>>>>>> upstream/main
   }
 });
 

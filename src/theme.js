@@ -1,6 +1,19 @@
 import {StyleSheet} from 'react-native';
 
 export const Colors = {
+<<<<<<< HEAD
+  background: '#0B1020',
+  surface: '#0F1724',
+  surfaceLight: '#162034',
+  primary: '#F97316',
+  primaryDark: '#C2410C',
+  accent: '#F59E0B',
+  accentDark: '#D97706',
+  text: '#FDFBF7',
+  muted: '#BFAE92',
+  card: '#0F1724',
+  border: '#21303F',
+=======
   // Palette terreuse
   background: '#2F2620', // Brun profond (terre)
   surface: '#4A3B30', // Brun moyen
@@ -15,6 +28,7 @@ export const Colors = {
   muted: '#A89F95',
   card: '#4A3B30',
   border: '#6B5A4D',
+>>>>>>> upstream/main
 };
 
 export default StyleSheet.create({
