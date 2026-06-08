@@ -8,11 +8,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialisation Supabase
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-);
+// Initialisation Supabase (paresseuse : on n'instancie le client que si les
+// variables d'environnement sont présentes, sinon supabase-js lève une erreur
+// au démarrage et fait planter TOUTE la fonction, y compris /api/health).
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+} else {
+  console.warn(
+    '[Backend] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants : ' +
+      'les routes Supabase sont désactivées.',
+  );
+}
 
 const JAMENDO_CLIENT_ID = process.env.JAMENDO_CLIENT_ID;
 
@@ -60,6 +70,11 @@ app.get('/api/jamendo/search', async (req, res) => {
 
 // Route pour récupérer les chansons depuis Supabase
 app.get('/api/songs', async (req, res) => {
+  if (!supabase) {
+    return res
+      .status(503)
+      .json({error: 'Supabase non configuré sur le serveur'});
+  }
   try {
     // On essaie d'abord 'songs', sinon 'tracks'
     let {data, error} = await supabase
