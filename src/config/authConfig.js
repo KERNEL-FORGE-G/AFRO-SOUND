@@ -3,30 +3,17 @@
 export const OAUTH_PROVIDERS = {
   GOOGLE: 'google',
   GITHUB: 'github',
-  SPOTIFY: 'spotify',
 };
+
+// Schéma de deep link (doit rester en minuscules : Android met le scheme du
+// manifest en minuscules, donc l'URL de retour doit correspondre exactement).
+// C'est aussi la valeur à ajouter dans Supabase → Authentication →
+// URL Configuration → Redirect URLs.
+export const OAUTH_REDIRECT_URL = 'com.afrsound://auth/callback';
 
 // Supabase OAuth (Google, GitHub)
 // See: https://supabase.com/docs/guides/auth/oauth
 export const supabaseOAuthConfig = {
-  redirectUrl: 'com.afrSound://auth/callback', // Adjust scheme per your app.json
+  redirectUrl: OAUTH_REDIRECT_URL,
   scopes: ['openid', 'profile', 'email'],
 };
-
-// Spotify OAuth Configuration
-// Docs: https://developer.spotify.com/documentation/web-api/concepts/authorization
-export const spotifyOAuthConfig = {
-  clientId: process.env.SPOTIFY_CLIENT_ID || 'YOUR_SPOTIFY_CLIENT_ID',
-  redirectUrl: 'com.afrSound://spotify/callback',
-  scopes: [
-    'user-read-private',
-    'user-read-email',
-    'playlist-modify-public',
-    'playlist-modify-private',
-  ],
-};
-
-// TODO: Implement OAuth flows in authService.js using:
-// - react-native-app-auth for Spotify
-// - supabase-js signInWithOAuth for Google/GitHub
-// - expo-auth-session for universal OAuth handling
