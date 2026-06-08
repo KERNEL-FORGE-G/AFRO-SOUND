@@ -1,5 +1,11 @@
 import {useDispatch, useSelector} from 'react-redux';
-import {createGroupPlaylist, addTrackToGroup, removeTrackFromGroup, addMemberToGroup, markPlaylistSynced} from '../store/slices/playlistsSlice';
+import {
+  createGroupPlaylist,
+  addTrackToGroup,
+  removeTrackFromGroup,
+  addMemberToGroup,
+  markPlaylistSynced,
+} from '../store/slices/playlistsSlice';
 
 export const useGroupPlaylist = () => {
   const dispatch = useDispatch();
@@ -21,7 +27,7 @@ export const useGroupPlaylist = () => {
     dispatch(addMemberToGroup({playlistId, memberId}));
   };
 
-  const markSynced = (playlistId) => {
+  const markSynced = playlistId => {
     dispatch(markPlaylistSynced({playlistId}));
   };
 

@@ -57,9 +57,13 @@ const playlistsSlice = createSlice({
     markPlaylistSynced(state, action) {
       const {playlistId} = action.payload;
       const pl = state.groupPlaylists[playlistId];
-      if (pl) pl.isSynced = true;
+      if (pl) {
+        pl.isSynced = true;
+      }
       // remove related queue items
-      state.offlineQueue = state.offlineQueue.filter(q => q.playlistId !== playlistId);
+      state.offlineQueue = state.offlineQueue.filter(
+        q => q.playlistId !== playlistId,
+      );
     },
     enqueueAction(state, action) {
       state.offlineQueue.push(action.payload);

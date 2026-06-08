@@ -15,6 +15,47 @@ jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 
 jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
 
+jest.mock('./src/store', () => ({store: {}, persistor: {}}));
+
+jest.mock('react-redux', () => ({
+  Provider: ({children}) => children,
+}));
+
+jest.mock('redux-persist/integration/react', () => ({
+  PersistGate: ({children}) => children,
+}));
+
+jest.mock('rn-fetch-blob', () => ({
+  __esModule: true,
+  default: {
+    fs: {dirs: {DocumentDir: '/tmp'}},
+    config: () => ({fetch: () => Promise.resolve()}),
+  },
+}));
+
+jest.mock('react-native-track-player', () => ({
+  __esModule: true,
+  default: {
+    setupPlayer: jest.fn(() => Promise.resolve()),
+    updateOptions: jest.fn(() => Promise.resolve()),
+    setRepeatMode: jest.fn(() => Promise.resolve()),
+    add: jest.fn(() => Promise.resolve()),
+    reset: jest.fn(() => Promise.resolve()),
+    play: jest.fn(() => Promise.resolve()),
+    pause: jest.fn(() => Promise.resolve()),
+    skip: jest.fn(() => Promise.resolve()),
+    skipToNext: jest.fn(() => Promise.resolve()),
+    skipToPrevious: jest.fn(() => Promise.resolve()),
+  },
+  Capability: {},
+  RepeatMode: {Queue: 0},
+  State: {Playing: 'playing', Paused: 'paused'},
+  Event: {PlaybackActiveTrackChanged: 'playback-active-track-changed'},
+  usePlaybackState: () => ({state: undefined}),
+  useProgress: () => ({position: 0, duration: 0}),
+  useTrackPlayerEvents: () => {},
+}));
+
 jest.mock('@react-navigation/native', () => {
   const actual = jest.requireActual('@react-navigation/native');
   return {

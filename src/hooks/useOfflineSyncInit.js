@@ -6,7 +6,7 @@ import OfflineSyncService from '../services/syncService';
  * Hook for starting auto-sync when the app initializes or network state changes.
  * Call this once in App.tsx or a root component.
  */
-export const useOfflineSyncInit = (store) => {
+export const useOfflineSyncInit = store => {
   const dispatch = useDispatch();
   const offlineQueue = useSelector(state => state.playlists.offlineQueue);
   const groupPlaylists = useSelector(state => state.playlists.groupPlaylists);

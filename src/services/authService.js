@@ -1,5 +1,9 @@
-import {supabaseClient} from '../supabaseClient';
-import {OAUTH_PROVIDERS, supabaseOAuthConfig, spotifyOAuthConfig} from '../config/authConfig';
+import {supabase as supabaseClient} from '../supabaseClient';
+import {
+  OAUTH_PROVIDERS,
+  supabaseOAuthConfig,
+  spotifyOAuthConfig,
+} from '../config/authConfig';
 
 // OAuth Service for handling social logins (Google, GitHub, Spotify)
 export class AuthService {
@@ -17,7 +21,9 @@ export class AuthService {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return {success: true, user: data?.user, session: data?.session};
     } catch (error) {
       console.error(`[AuthService] Supabase ${provider} error:`, error.message);
@@ -35,7 +41,9 @@ export class AuthService {
       // Placeholder: actual implementation would use:
       // - react-native-app-auth.authorize(spotifyOAuthConfig)
       // - or expo-auth-session with WebBrowser
-      console.warn('[AuthService] Spotify OAuth not yet implemented. See authService.js for setup.');
+      console.warn(
+        '[AuthService] Spotify OAuth not yet implemented. See authService.js for setup.',
+      );
       return {success: false, error: 'Spotify OAuth not configured'};
     } catch (error) {
       console.error('[AuthService] Spotify error:', error.message);
@@ -49,7 +57,9 @@ export class AuthService {
   static async logout() {
     try {
       const {error} = await supabaseClient.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return {success: true};
     } catch (error) {
       console.error('[AuthService] Logout error:', error.message);
@@ -63,7 +73,9 @@ export class AuthService {
   static async getCurrentSession() {
     try {
       const {data, error} = await supabaseClient.auth.getSession();
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       return {success: true, session: data?.session};
     } catch (error) {
       console.error('[AuthService] Session error:', error.message);

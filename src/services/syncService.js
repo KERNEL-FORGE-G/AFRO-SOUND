@@ -7,13 +7,15 @@ export class OfflineSyncService {
     // Implement logic to process offlineQueue and sync with backend.
     // Example: iterate queue, call API endpoints to sync playlists,
     // then dispatch markPlaylistSynced actions.
-    
+
     if (!offlineQueue || offlineQueue.length === 0) {
       console.log('[OfflineSyncService] No offline actions to sync.');
       return;
     }
 
-    console.log(`[OfflineSyncService] Syncing ${offlineQueue.length} offline actions...`);
+    console.log(
+      `[OfflineSyncService] Syncing ${offlineQueue.length} offline actions...`,
+    );
 
     try {
       // Example: group actions by playlistId and batch sync

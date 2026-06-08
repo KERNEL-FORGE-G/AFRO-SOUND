@@ -68,19 +68,20 @@ yarn-error.log
 .env.local
 .env.*
 backend/.env
+# ...mais on garde les exemples (sans secret)
+!.env.example
+!backend/.env.example
 
 # testing
 /coverage
+
+# Android build/crash logs
+android/*.log
+android/hs_err_pid*.log
+android/replay_pid*.log
 
 assets/images/*.jpg
 
 assets/images/*.png
 
 assets/videos/
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-=======
-.vercel
->>>>>>> upstream/main
->>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
