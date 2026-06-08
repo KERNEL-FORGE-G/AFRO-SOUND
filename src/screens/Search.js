@@ -8,17 +8,22 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {Colors} from '../theme';
+import theme, {Colors} from '../theme';
 
-const providers = ['all', 'jamendo', 'itunes', 'deezer'];
+const recentSearches = [
+  'Happier Than Ever',
+  'Drake',
+  'Mix Pop',
+  'Podcasts Humour',
+];
 
 export default function Search({navigation}) {
   const [query, setQuery] = useState('');
-  const [source, setSource] = useState('all');
 
   const handleSearch = () => {
+    // On ne navigue que si le champ n'est pas vide
     if (query.trim().length > 0) {
-      navigation.navigate('SearchResults', {query, source});
+      navigation.navigate('SearchResults', {query});
     }
   };
 
@@ -29,12 +34,12 @@ export default function Search({navigation}) {
         <Ionicons
           name="search"
           size={24}
-          color="#181411"
+          color={Colors.background}
           style={styles.searchIcon}
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="Que souhaitez-vous écouter ?"
+          placeholder="Que souhaitez-vous écouter sur AFRO SOUND ?"
           placeholderTextColor="#A69485"
           value={query}
           onChangeText={setQuery}
@@ -43,29 +48,29 @@ export default function Search({navigation}) {
         />
       </View>
 
-      <View style={styles.filterContainer}>
-        {providers.map(p => (
+      <Text style={styles.recentTitle}>Recherches récentes</Text>
+      <ScrollView
+        style={styles.recentList}
+        showsVerticalScrollIndicator={false}>
+        {recentSearches.map((item, index) => (
           <TouchableOpacity
-            key={p}
-            style={[styles.filterBtn, source === p && styles.activeFilter]}
-            onPress={() => setSource(p)}>
-            <Text
-              style={[
-                styles.filterText,
-                source === p && styles.activeFilterText,
-              ]}>
-              {p.toUpperCase()}
-            </Text>
+            key={index}
+            style={styles.recentItem}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('SearchResults', {query: item})}>
+            <Ionicons name="time-outline" size={24} color={Colors.muted} />
+            <Text style={styles.recentItemText}>{item}</Text>
+            <Ionicons name="close-outline" size={24} color="#C4A484" />
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#181411', padding: 16, paddingTop: 60},
-  title: {color: '#FDFBF7', fontSize: 24, fontWeight: 'bold', marginBottom: 20},
+  container: {flex: 1, backgroundColor: Colors.background, padding: 16, paddingTop: 60},
+  title: {color: Colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 20},
   searchBar: {
     backgroundColor: '#FDFBF7',
     borderRadius: 24,
@@ -73,21 +78,28 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
   },
   searchIcon: {marginRight: 12},
-  searchInput: {flex: 1, fontSize: 16, color: '#181411'},
-  filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: Colors.background,
+    padding: 0,
+    fontWeight: '500',
   },
-  filterBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#333',
+  recentTitle: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 32,
+    marginBottom: 16,
   },
-  activeFilter: {backgroundColor: Colors.primary},
-  filterText: {color: '#FFF', fontSize: 12, fontWeight: 'bold'},
-  activeFilterText: {color: Colors.background},
+  recentList: {flex: 1},
+  recentItem: {flexDirection: 'row', alignItems: 'center', marginBottom: 20},
+  recentItemText: {flex: 1, color: Colors.text, fontSize: 16, marginLeft: 16},
 });

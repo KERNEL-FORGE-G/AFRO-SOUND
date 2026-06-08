@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import theme, {Colors} from '../theme';
-import {supabase} from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 
 export default function Register({navigation}) {
   const [email, setEmail] = useState('');
@@ -24,7 +24,7 @@ export default function Register({navigation}) {
     }
 
     setLoading(true);
-    const {data, error} = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: email,
       password: password,
       options: {
@@ -35,12 +35,9 @@ export default function Register({navigation}) {
     });
 
     if (error) {
-      Alert.alert("Erreur d'inscription", error.message);
+      Alert.alert('Erreur d\'inscription', error.message);
     } else {
-      Alert.alert(
-        'Succès',
-        'Vérifiez votre boîte mail pour confirmer votre compte !',
-      );
+      Alert.alert('Succès', 'Vérifiez votre boîte mail pour confirmer votre compte !');
       navigation.replace('Home');
     }
     setLoading(false);
@@ -53,7 +50,7 @@ export default function Register({navigation}) {
 
         <TextInput
           placeholder="Nom d'utilisateur"
-          placeholderTextColor="#A69485"
+          placeholderTextColor={Colors.muted}
           style={styles.input}
           value={username}
           onChangeText={setUsername}
@@ -62,17 +59,17 @@ export default function Register({navigation}) {
 
         <TextInput
           placeholder="Email"
-          placeholderTextColor="#A69485"
+          placeholderTextColor={Colors.muted}
           style={styles.input}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
         />
-
+        
         <TextInput
           placeholder="Mot de passe"
-          placeholderTextColor="#A69485"
+          placeholderTextColor={Colors.muted}
           secureTextEntry
           style={styles.input}
           value={password}
@@ -85,16 +82,16 @@ export default function Register({navigation}) {
           disabled={loading}
           activeOpacity={0.9}>
           {loading ? (
-            <ActivityIndicator color="#181411" />
+            <ActivityIndicator color={Colors.background} />
           ) : (
             <Text style={styles.buttonText}>S'inscrire</Text>
           )}
         </TouchableOpacity>
-
-        <TouchableOpacity
+        
+        <TouchableOpacity 
           style={{marginTop: 20, alignItems: 'center'}}
           onPress={() => navigation.navigate('Home')}>
-          <Text style={{color: '#C4A484'}}>Continuer sans compte</Text>
+          <Text style={{color: Colors.muted}}>Continuer sans compte</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -104,17 +101,17 @@ export default function Register({navigation}) {
 const styles = StyleSheet.create({
   title: {color: '#FDFBF7', fontSize: 24, fontWeight: '700', marginBottom: 12},
   input: {
-    backgroundColor: '#2C241E',
-    color: '#FDFBF7',
+    backgroundColor: Colors.surface,
+    color: Colors.text,
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
   },
   button: {
-    backgroundColor: '#E67E22',
+    backgroundColor: Colors.accent,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
   },
-  buttonText: {color: '#181411', fontWeight: '700'},
+  buttonText: {color: Colors.background, fontWeight: '700'},
 });

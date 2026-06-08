@@ -4,9 +4,10 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
+import theme, {Colors} from '../theme';
+import AppButton from '../components/AppButton';
 
 export default function CreatePlaylist({navigation}) {
   const [playlistName, setPlaylistName] = useState('');
@@ -34,19 +35,14 @@ export default function CreatePlaylist({navigation}) {
       <TextInput
         style={styles.input}
         placeholder="Ex: Ma super playlist..."
-        placeholderTextColor="#A69485"
+        placeholderTextColor={Colors.muted}
         value={playlistName}
         onChangeText={setPlaylistName}
         returnKeyType="done"
         onSubmitEditing={handleCreate}
       />
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={handleCreate}
-        activeOpacity={0.8}>
-        <Text style={styles.buttonText}>Créer</Text>
-      </TouchableOpacity>
+      <AppButton title="Créer" onPress={handleCreate} style={styles.button} />
     </View>
   );
 }
@@ -54,22 +50,22 @@ export default function CreatePlaylist({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#181411',
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  title: {color: '#FDFBF7', fontSize: 24, fontWeight: 'bold', marginBottom: 12},
+  title: {color: Colors.text, fontSize: 24, fontWeight: 'bold', marginBottom: 12},
   subtitle: {
-    color: '#C4A484',
+    color: Colors.muted,
     fontSize: 16,
     marginBottom: 32,
     textAlign: 'center',
   },
   input: {
     width: '100%',
-    backgroundColor: '#2C241E',
-    color: '#FDFBF7',
+    backgroundColor: Colors.surface,
+    color: Colors.text,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 8,
@@ -77,12 +73,12 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   button: {
-    backgroundColor: '#E67E22',
+    backgroundColor: Colors.accent,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 30,
     width: '100%',
     alignItems: 'center',
   },
-  buttonText: {color: '#181411', fontSize: 18, fontWeight: 'bold'},
+  buttonText: {color: Colors.background, fontSize: 18, fontWeight: 'bold'},
 });

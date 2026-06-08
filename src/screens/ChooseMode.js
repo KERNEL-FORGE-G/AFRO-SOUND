@@ -10,12 +10,12 @@ import theme, {Colors} from '../theme';
 
 export default function ChooseMode({navigation}) {
   return (
-    <View style={[styles.bg, {backgroundColor: Colors.surface}]}>
+    <ImageBackground
+      source={require('../../assets/2.jpg')}
+      style={styles.bg}>
       <View style={styles.container}>
         <Text style={styles.title}>AFRO SOUND</Text>
-        <Text style={[styles.title, {fontSize: 20, marginTop: -20}]}>
-          Choisis ton mode
-        </Text>
+        <Text style={[styles.title, {fontSize: 20, marginTop: -20}]}>Choisis ton mode</Text>
 
         <TouchableOpacity
           style={styles.bigButton}
@@ -33,7 +33,7 @@ export default function ChooseMode({navigation}) {
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 

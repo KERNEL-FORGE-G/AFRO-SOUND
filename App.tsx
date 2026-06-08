@@ -1,12 +1,19 @@
 import React from 'react';
 import AppNavigator from './src/navigation/AppNavigator';
 import {PlayerProvider} from './src/context/PlayerContext';
+import {Provider} from 'react-redux';
+import {PersistGate} from 'redux-persist/integration/react';
+import {store, persistor} from './src/store';
 
 function App(): JSX.Element {
   return (
-    <PlayerProvider>
-      <AppNavigator />
-    </PlayerProvider>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <PlayerProvider>
+          <AppNavigator />
+        </PlayerProvider>
+      </PersistGate>
+    </Provider>
   );
 }
 

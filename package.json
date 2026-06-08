@@ -1,6 +1,7 @@
 {
   "name": "afrosound",
   "version": "0.0.1",
+  "private": true,
   "scripts": {
     "start": "react-native start --reset-cache",
     "android": "bash scripts/setup-android-sdk.sh && react-native run-android --reset-cache",
@@ -17,6 +18,7 @@
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.7",
     "@react-navigation/stack": "^6.3.16",
+    "@reduxjs/toolkit": "^2.12.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "axios": "^1.16.1",
@@ -32,6 +34,8 @@
     "react-native-track-player": "^4.1.2",
     "react-native-url-polyfill": "^3.0.0",
     "react-native-vector-icons": "^10.3.0",
+    "react-redux": "^9.3.0",
+    "redux-persist": "^6.0.0",
     "rn-fetch-blob": "^0.12.0"
   },
   "devDependencies": {
