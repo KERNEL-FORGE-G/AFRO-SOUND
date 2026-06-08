@@ -26,9 +26,102 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 const JAMENDO_CLIENT_ID = process.env.JAMENDO_CLIENT_ID;
 
+// ── Audius ────────────────────────────────────────────────────────────────
+// La lecture/recherche Audius est gratuite et ne demande qu'un app_name.
+const AUDIUS_APP_NAME = process.env.AUDIUS_APP_NAME || 'AFRO_SOUND';
+const AUDIUS_FALLBACK_HOST = 'https://discoveryprovider.audius.co';
+let audiusHost = null;
+
+// Résout (et met en cache) un hôte "discovery provider" Audius.
+async function getAudiusHost() {
+  if (audiusHost) {
+    return audiusHost;
+  }
+  try {
+    const {data} = await axios.get('https://api.audius.co', {timeout: 8000});
+    if (Array.isArray(data?.data) && data.data.length) {
+      audiusHost = data.data[0];
+    }
+  } catch (e) {
+    console.warn('[Audius] Résolution hôte échouée:', e.message);
+  }
+  return audiusHost || AUDIUS_FALLBACK_HOST;
+}
+
+// Normalise un track Audius vers l'objet unifié de l'app.
+function normalizeAudius(track, host) {
+  const art = track.artwork || {};
+  return {
+    id: `audius_${track.id}`,
+    title: track.title,
+    artist: track.user?.name || 'Artiste inconnu',
+    album: '',
+    audioUrl: `${host}/v1/tracks/${track.id}/stream?app_name=${AUDIUS_APP_NAME}`,
+    cover: art['480x480'] || art['1000x1000'] || art['150x150'] || null,
+    source: 'audius',
+    duration: track.duration || 0,
+  };
+}
+
 // Route de test
 app.get('/api/health', (req, res) => {
   res.json({status: 'ok', message: 'AfroSound Backend is running'});
+});
+
+// Proxy Audius — recherche
+app.get('/api/audius/search', async (req, res) => {
+  const {query, limit = 10} = req.query;
+  if (!query) {
+    return res.status(400).json({error: 'Query parameter is required'});
+  }
+  try {
+    const host = await getAudiusHost();
+    const response = await axios.get(`${host}/v1/tracks/search`, {
+      params: {query, app_name: AUDIUS_APP_NAME, limit},
+      timeout: 10000,
+    });
+    const tracks = (response.data?.data || []).map(t =>
+      normalizeAudius(t, host),
+    );
+    res.json(tracks);
+  } catch (error) {
+    console.error('Audius search error:', error.message);
+    res.status(502).json({error: 'Failed to fetch from Audius'});
+  }
+});
+
+// Proxy Audius — tendances (genre optionnel, ex. "Afrobeats")
+app.get('/api/audius/trending', async (req, res) => {
+  const {genre, limit = 20} = req.query;
+  try {
+    const host = await getAudiusHost();
+    const response = await axios.get(`${host}/v1/tracks/trending`, {
+      params: {app_name: AUDIUS_APP_NAME, ...(genre ? {genre} : {})},
+      timeout: 10000,
+    });
+    const tracks = (response.data?.data || [])
+      .slice(0, Number(limit))
+      .map(t => normalizeAudius(t, host));
+    res.json(tracks);
+  } catch (error) {
+    console.error('Audius trending error:', error.message);
+    res.status(502).json({error: 'Failed to fetch trending from Audius'});
+  }
+});
+
+// Redirige vers le flux audio d'un track Audius (id sans le préfixe "audius_")
+app.get('/api/audius/stream/:id', async (req, res) => {
+  try {
+    const host = await getAudiusHost();
+    const id = req.params.id.replace(/^audius_/, '');
+    res.redirect(
+      302,
+      `${host}/v1/tracks/${id}/stream?app_name=${AUDIUS_APP_NAME}`,
+    );
+  } catch (error) {
+    console.error('Audius stream error:', error.message);
+    res.status(502).json({error: 'Failed to resolve Audius stream'});
+  }
 });
 
 // Proxy Jamendo

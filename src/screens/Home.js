@@ -17,7 +17,7 @@ export default function Home({navigation}) {
   const [sections, setSections] = useState({
     afrobeats: [],
     topGlobal: [],
-    itunesAfro: [],
+    audiusTrending: [],
     customSongs: [],
     recentTracks: [],
   });
@@ -97,6 +97,8 @@ export default function Home({navigation}) {
               ? 'Deezer'
               : p.source === 'jamendo'
               ? 'Jamendo'
+              : p.source === 'audius'
+              ? 'Audius'
               : 'Local'}
           </Text>
         </View>
@@ -216,14 +218,14 @@ export default function Home({navigation}) {
             </View>
 
             <Text style={[styles.sectionTitle, {marginTop: 28}]}>
-              Découvertes iTunes
+              Tendances Audius
             </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-              {sections.itunesAfro.map((p, i) =>
-                renderTrackCard(p, i, sections.itunesAfro),
+              {sections.audiusTrending.map((p, i) =>
+                renderTrackCard(p, i, sections.audiusTrending),
               )}
             </ScrollView>
           </>

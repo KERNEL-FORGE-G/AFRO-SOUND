@@ -26,6 +26,39 @@ export const searchJamendo = async (query, limit = 10) => {
   }
 };
 
+/** Recherche Audius (titres complets en streaming) via le backend */
+export const searchAudius = async (query, limit = 10) => {
+  try {
+    const baseUrl = getBaseUrl();
+    const res = await fetch(
+      `${baseUrl}/api/audius/search?query=${encodeURIComponent(
+        query,
+      )}&limit=${limit}`,
+    );
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn('[Audius search] Erreur:', e.message);
+    return [];
+  }
+};
+
+/** Tendances Audius (genre optionnel, ex. "Afrobeats") via le backend */
+export const getAudiusTrending = async (limit = 20, genre = '') => {
+  try {
+    const baseUrl = getBaseUrl();
+    const url = `${baseUrl}/api/audius/trending?limit=${limit}${
+      genre ? `&genre=${encodeURIComponent(genre)}` : ''
+    }`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    console.warn('[Audius trending] Erreur:', e.message);
+    return [];
+  }
+};
+
 // ─────────────────────────────────────────
 // Helpers de normalisation
 // ─────────────────────────────────────────
@@ -200,6 +233,9 @@ export const searchAll = async (query, limit = 10, source = 'all') => {
   if (source === 'all' || source === 'jamendo') {
     tasks.push(withTimeout(searchJamendo(query, limit), 5000));
   }
+  if (source === 'all' || source === 'audius') {
+    tasks.push(withTimeout(searchAudius(query, limit), 6000));
+  }
   if (source === 'all' || source === 'itunes') {
     tasks.push(withTimeout(searchItunes(query, limit), 5000));
   }
@@ -235,17 +271,19 @@ export const getSupabaseSongs = async () => {
  * Récupère les données de la page d'accueil
  */
 export const getHomeData = async () => {
-  const [afrobeats, topGlobal, itunesAfro, customSongs] = await Promise.all([
-    getDeezerAfrobeats(10),
-    getDeezerTopGlobal(10),
-    getItunesAfrobeats(8),
-    getSupabaseSongs(),
-  ]);
+  const [afrobeats, topGlobal, audiusTrending, customSongs] = await Promise.all(
+    [
+      getDeezerAfrobeats(10),
+      getDeezerTopGlobal(10),
+      getAudiusTrending(10),
+      getSupabaseSongs(),
+    ],
+  );
 
   return {
     afrobeats, // Section "Afrobeats"
     topGlobal, // Section "Top Mondial"
-    itunesAfro, // Section "Découvertes"
+    audiusTrending, // Section "Tendances Audius" (streaming complet)
     customSongs, // Section "Vos titres"
     recentTracks: [...afrobeats.slice(0, 4), ...customSongs.slice(0, 2)],
   };
