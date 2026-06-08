@@ -1,11 +1,18 @@
 import {useDispatch, useSelector} from 'react-redux';
-import {setUser, setToken, logout, socialLogin} from '../store/slices/authSlice';
+import {
+  setUser,
+  setToken,
+  logout,
+  socialLogin,
+} from '../store/slices/authSlice';
 
 export const useAuth = () => {
   const dispatch = useDispatch();
-  const {user, token, provider, status, error} = useSelector(state => state.auth);
+  const {user, token, provider, status, error} = useSelector(
+    state => state.auth,
+  );
 
-  const handleSocialLogin = (socialProvider) => {
+  const handleSocialLogin = socialProvider => {
     // Dispatches the socialLogin async thunk.
     // Actual OAuth implementation should happen in a service,
     // then dispatch setUser/setToken with the result.
@@ -16,11 +23,11 @@ export const useAuth = () => {
     dispatch(logout());
   };
 
-  const setUserInfo = (userObj) => {
+  const setUserInfo = userObj => {
     dispatch(setUser(userObj));
   };
 
-  const setTokenInfo = (tokenStr) => {
+  const setTokenInfo = tokenStr => {
     dispatch(setToken(tokenStr));
   };
 

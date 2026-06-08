@@ -1,138 +1,71 @@
-<<<<<<< HEAD
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
-
-# Getting Started
-
->**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.
-
-## Step 1: Start the Metro Server
-
-First, you will need to start **Metro**, the JavaScript _bundler_ that ships _with_ React Native.
- 
-To start Metro, run the following command from the _root_ of your React Native project:
-
-```bash
-# using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Start your Application
-
- Let Metro Bundler run in its _own_ terminal. Open a _new_ terminal from the _root_ of your React Native project. Run the following command to start your Android app:
- 
- ### For Android
- 
- ```bash
- # using npm
- npm run android
- 
- # OR using Yarn
- yarn android
-If everything is set up _correctly_, you should see your new app running in your Android emulator shortly provided you have set up your emulator correctly.
-
-This is one way to run your app — you can also run it directly from within Android Studio.
-
-## Step 3: Modifying your App
-
-Now that you have successfully run the app, let's modify it.
-
-1. Open `App.tsx` in your text editor of choice and edit some lines.
-2. For **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Developer Menu** (<kbd>Ctrl</kbd> + <kbd>M</kbd> on Windows/Linux or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> on macOS) to see your changes!
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [Introduction to React Native](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you can't get this to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# AfroSound Backend
-
-Ce projet inclut un backend conçu pour être hébergé sur **Vercel**. Il sert de pont sécurisé pour l'API Jamendo et la base de données Supabase.
-
-## Structure du Backend
-
-- `backend/api/index.js` : Point d'entrée de l'API (Express).
-- `vercel.json` : Configuration pour le déploiement sur Vercel.
-- `src/config.js` : Configuration du client pour pointer vers le backend.
-
-## Déploiement sur Vercel
-
-1. Connectez votre dépôt GitHub à Vercel.
-2. Ajoutez les variables d'environnement suivantes dans le tableau de bord Vercel :
-   - `JAMENDO_CLIENT_ID` : Votre ID client Jamendo.
-   - `SUPABASE_URL` : L'URL de votre projet Supabase.
-   - `SUPABASE_SERVICE_ROLE_KEY` : Votre clé de rôle de service Supabase.
-3. Déployez.
-4. Mettez à jour `BACKEND_URL` dans `src/config.js` avec l'URL fournie par Vercel.
-
-## Développement Local
-
-Pour tester le backend localement :
-1. Allez dans le dossier `backend`.
-2. Installez les dépendances : `npm install`.
-3. Lancez le serveur : `node api/index.js` (ou utilisez `vercel dev`).
-4. Assurez-vous que l'application pointe vers `http://10.0.2.2:3000` (pour Android) ou `http://localhost:3000`.
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
-=======
-# AFRO SOUND - Projet React Native
+# AFRO SOUND — Application React Native
 
 ## Description
-AFRO SOUND est une application de streaming musical axée sur les sonorités africaines, offrant une interface élégante avec une palette de couleurs terreuses et dorées.
+AFRO SOUND est une application de streaming musical axée sur les sonorités
+africaines, offrant une interface élégante avec une palette de couleurs
+terreuses et dorées.
 
 ## Architecture & Structure
 Le projet suit une architecture modulaire :
-- `src/screens/` : Écrans de l'application (Accueil, Recherche, Bibliothèque, Lecteur).
-- `src/components/` : Composants réutilisables (ex: PlayerBar).
-- `src/context/` : Gestion d'état global (`PlayerContext` pour le lecteur audio, favoris).
-- `src/services/` : Services API (Deezer, iTunes, Jamendo, Supabase).
+- `src/screens/` : Écrans de l'application (Accueil, Recherche, Bibliothèque, Lecteur, Login, …).
+- `src/components/` : Composants réutilisables (ex : `PlayerBar`).
+- `src/context/` : État global du lecteur audio (`PlayerContext`).
+- `src/store/` : Store Redux Toolkit (auth, playlists) avec `redux-persist`.
+- `src/hooks/` : Hooks personnalisés (`useAuth`, `useGroupPlaylist`, `useOfflineSyncInit`).
+- `src/services/` : Services API (Deezer, iTunes, Jamendo, Supabase, lecteur).
 - `src/theme.js` : Définition de la palette de couleurs.
+- `backend/` : Backend Express déployé sur Vercel (proxy Jamendo + accès Supabase).
 
 ## Fonctionnalités
 ### Lecteur Audio
-- Support du background audio natif via `react-native-track-player`.
-- Contrôles de lecture (Play/Pause, Suivant, Précédent).
-- Barre de progression avec affichage du pourcentage de lecture.
+- Lecture en arrière-plan native via `react-native-track-player`.
+- Contrôles (Play/Pause, Suivant, Précédent), barre de progression.
 - Téléchargement de titres via `rn-fetch-blob`.
 
 ### Recherche
-- Recherche combinée (Deezer, iTunes, Jamendo) avec timeout.
-- Filtrage par fournisseur (All, Jamendo, iTunes, Deezer).
-- Historique de recherche local.
+- Recherche combinée (Deezer, iTunes, Jamendo) avec filtrage par fournisseur.
 
 ### Bibliothèque & Playlists
-- **Favoris** : Système pour ajouter des titres favoris (persistance locale).
-- **Playlists** : Création de playlists personnalisées.
+- Favoris, playlists personnalisées et playlists de groupe.
 
 ## Backend & API
-- **Supabase** : Authentification et stockage des données utilisateur.
-- **APIs Musicales** : Intégration de Deezer, iTunes et Jamendo pour le catalogue.
+L'architecture cible est : **App → Backend Vercel → Supabase + APIs musicales**.
+
+- **Supabase** : authentification et base de données (voir `docs/SUPABASE_AUTH.md`).
+- **APIs musicales** : Deezer et iTunes (sans clé, previews 30 s), Jamendo et
+  Audius (titres complets, clés gratuites via le backend).
+
+### Backend sur Vercel
+- `backend/api/index.js` : point d'entrée de l'API (Express, format serverless).
+- `vercel.json` : configuration du déploiement (rewrites `/api/*`).
+- `src/config.js` : URL du backend côté application.
+
+Variables d'environnement à définir dans Vercel :
+- `JAMENDO_CLIENT_ID` : identifiant client Jamendo.
+- `SUPABASE_URL` : URL du projet Supabase.
+- `SUPABASE_SERVICE_ROLE_KEY` : clé service role Supabase (jamais côté app).
+
+### Développement local du backend
+1. `cd backend && npm install`
+2. `node api/index.js` (ou `vercel dev`)
+3. L'app pointe vers `http://10.0.2.2:3000` (émulateur Android) en mode dev.
 
 ## Installation & Build
 ### Prérequis
-- Node.js (Version recommandée : 25)
-- Android SDK / JDK 17+
+- Node.js 18 LTS
+- Android SDK / JDK 17
 
 ### Commandes
-- `npm run start` : Lance le bundler Metro avec nettoyage du cache.
-- `npm run android` : Build et installation de l'APK Debug avec nettoyage du cache.
-- `npm run build:release` : Génère l'APK Release.
-- `npm run lint` : Vérification du code.
+- `npm start` : lance le bundler Metro.
+- `npm run android` : build et installe l'APK Debug sur l'émulateur/appareil.
+- `npm run build:debug` : génère l'APK Debug.
+- `npm run build:release` : génère l'APK Release.
+- `npm run lint` : vérification ESLint.
+- `npm test` : tests Jest.
+
+## Documentation
+- `docs/SUPABASE_AUTH.md` : configuration de l'authentification Supabase
+  (Google / GitHub) avec le branding « AFRO SOUND ».
 
 ---
-*Documentation générée pour le projet Afro Sound.*
->>>>>>> upstream/main
+*Documentation du projet AFRO SOUND.*

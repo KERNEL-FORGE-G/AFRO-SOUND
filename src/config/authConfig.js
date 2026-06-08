@@ -18,7 +18,12 @@ export const supabaseOAuthConfig = {
 export const spotifyOAuthConfig = {
   clientId: process.env.SPOTIFY_CLIENT_ID || 'YOUR_SPOTIFY_CLIENT_ID',
   redirectUrl: 'com.afrSound://spotify/callback',
-  scopes: ['user-read-private', 'user-read-email', 'playlist-modify-public', 'playlist-modify-private'],
+  scopes: [
+    'user-read-private',
+    'user-read-email',
+    'playlist-modify-public',
+    'playlist-modify-private',
+  ],
 };
 
 // TODO: Implement OAuth flows in authService.js using:

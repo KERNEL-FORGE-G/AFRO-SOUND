@@ -29,7 +29,10 @@ export default function LoginScreen({navigation}) {
       Alert.alert('Succès', `Connecté en tant que ${result.user?.email}`);
       navigation.navigate('Home');
     } else {
-      Alert.alert('Erreur', result.error || 'Erreur lors de la connexion Google.');
+      Alert.alert(
+        'Erreur',
+        result.error || 'Erreur lors de la connexion Google.',
+      );
     }
   };
 
@@ -44,7 +47,10 @@ export default function LoginScreen({navigation}) {
       Alert.alert('Succès', `Connecté en tant que ${result.user?.email}`);
       navigation.navigate('Home');
     } else {
-      Alert.alert('Erreur', result.error || 'Erreur lors de la connexion GitHub.');
+      Alert.alert(
+        'Erreur',
+        result.error || 'Erreur lors de la connexion GitHub.',
+      );
     }
   };
 
@@ -59,7 +65,10 @@ export default function LoginScreen({navigation}) {
       Alert.alert('Succès', 'Connecté à Spotify !');
       navigation.navigate('Home');
     } else {
-      Alert.alert('Erreur', result.error || 'Erreur lors de la connexion Spotify.');
+      Alert.alert(
+        'Erreur',
+        result.error || 'Erreur lors de la connexion Spotify.',
+      );
     }
   };
 
@@ -79,12 +88,22 @@ export default function LoginScreen({navigation}) {
   if (user) {
     return (
       <View style={styles.container}>
-        <ScrollView contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}>
+        <ScrollView
+          contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}>
           <View style={styles.userCard}>
-            <Ionicons name="checkmark-circle" size={64} color={Colors.primary} style={{marginBottom: 16}}/>
+            <Ionicons
+              name="checkmark-circle"
+              size={64}
+              color={Colors.primary}
+              style={{marginBottom: 16}}
+            />
             <Text style={styles.userEmail}>{user.email}</Text>
             <Text style={styles.userStatus}>Vous êtes connecté !</Text>
-            <AppButton title="Se Déconnecter" onPress={handleLogoutLocal} style={{marginTop: 32}} />
+            <AppButton
+              title="Se Déconnecter"
+              onPress={handleLogoutLocal}
+              style={{marginTop: 32}}
+            />
           </View>
         </ScrollView>
       </View>
@@ -96,7 +115,9 @@ export default function LoginScreen({navigation}) {
       <ScrollView contentContainerStyle={{paddingBottom: 40}}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>AFRO SOUND</Text>
-          <Text style={styles.headerSubtitle}>Créez, partagez et écoutez ensemble</Text>
+          <Text style={styles.headerSubtitle}>
+            Créez, partagez et écoutez ensemble
+          </Text>
         </View>
 
         <View style={styles.section}>
@@ -126,7 +147,13 @@ export default function LoginScreen({navigation}) {
             <Text style={styles.socialButtonText}>Spotify</Text>
           </TouchableOpacity>
 
-          {loading && <ActivityIndicator size="large" color={Colors.primary} style={{marginTop: 20}} />}
+          {loading && (
+            <ActivityIndicator
+              size="large"
+              color={Colors.primary}
+              style={{marginTop: 20}}
+            />
+          )}
         </View>
 
         <View style={styles.infoSection}>
@@ -143,11 +170,26 @@ export default function LoginScreen({navigation}) {
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: Colors.background},
-  header: {paddingHorizontal: 16, paddingTop: 60, paddingBottom: 40, alignItems: 'center'},
-  headerTitle: {color: Colors.primary, fontSize: 32, fontWeight: 'bold', marginBottom: 8},
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 60,
+    paddingBottom: 40,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    color: Colors.primary,
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
   headerSubtitle: {color: Colors.muted, fontSize: 14, textAlign: 'center'},
   section: {paddingHorizontal: 16, marginBottom: 40},
-  sectionTitle: {color: Colors.text, fontSize: 18, fontWeight: 'bold', marginBottom: 16},
+  sectionTitle: {
+    color: Colors.text,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -157,9 +199,26 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 12,
   },
-  socialButtonText: {color: Colors.text, fontSize: 16, fontWeight: '600', marginLeft: 12},
-  infoSection: {paddingHorizontal: 16, paddingVertical: 24, backgroundColor: Colors.surface, marginHorizontal: 16, borderRadius: 8},
-  infoTitle: {color: Colors.primary, fontSize: 14, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase'},
+  socialButtonText: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  infoSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+    backgroundColor: Colors.surface,
+    marginHorizontal: 16,
+    borderRadius: 8,
+  },
+  infoTitle: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
   infoItem: {color: Colors.muted, fontSize: 13, marginBottom: 8},
   userCard: {alignItems: 'center', paddingHorizontal: 16},
   userEmail: {color: Colors.text, fontSize: 18, fontWeight: 'bold'},

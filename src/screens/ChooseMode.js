@@ -10,30 +10,12 @@ import theme, {Colors} from '../theme';
 
 export default function ChooseMode({navigation}) {
   return (
-<<<<<<< HEAD
-    <ImageBackground
-      source={require('../../assets/2.jpg')}
-      style={styles.bg}>
-      <View style={styles.container}>
-        <Text style={styles.title}>AFRO SOUND</Text>
-        <Text style={[styles.title, {fontSize: 20, marginTop: -20}]}>Choisis ton mode</Text>
-=======
-<<<<<<< HEAD
-    <ImageBackground
-      source={require('../../assets/2.jpg')}
-      style={styles.bg}>
-      <View style={styles.container}>
-        <Text style={styles.title}>AFRO SOUND</Text>
-        <Text style={[styles.title, {fontSize: 20, marginTop: -20}]}>Choisis ton mode</Text>
-=======
-    <View style={[styles.bg, {backgroundColor: Colors.surface}]}>
+    <ImageBackground source={require('../../assets/2.jpg')} style={styles.bg}>
       <View style={styles.container}>
         <Text style={styles.title}>AFRO SOUND</Text>
         <Text style={[styles.title, {fontSize: 20, marginTop: -20}]}>
           Choisis ton mode
         </Text>
->>>>>>> upstream/main
->>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
 
         <TouchableOpacity
           style={styles.bigButton}
@@ -51,15 +33,7 @@ export default function ChooseMode({navigation}) {
           </Text>
         </TouchableOpacity>
       </View>
-<<<<<<< HEAD
     </ImageBackground>
-=======
-<<<<<<< HEAD
-    </ImageBackground>
-=======
-    </View>
->>>>>>> upstream/main
->>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
   );
 }
 

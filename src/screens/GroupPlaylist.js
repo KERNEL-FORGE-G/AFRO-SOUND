@@ -28,7 +28,7 @@ export default function GroupPlaylistScreen({navigation}) {
       return;
     }
     if (!user) {
-      Alert.alert('Non authentifié', 'Connectez-vous d\'abord.');
+      Alert.alert('Non authentifié', "Connectez-vous d'abord.");
       return;
     }
 
@@ -40,7 +40,10 @@ export default function GroupPlaylistScreen({navigation}) {
 
   const handleAddMember = () => {
     if (!newMemberEmail.trim() || !selectedPlaylistId) {
-      Alert.alert('Erreur', 'Veuillez entrer un email et sélectionner une playlist.');
+      Alert.alert(
+        'Erreur',
+        'Veuillez entrer un email et sélectionner une playlist.',
+      );
       return;
     }
 
@@ -51,7 +54,10 @@ export default function GroupPlaylistScreen({navigation}) {
 
   const renderPlaylistItem = ({item}) => (
     <TouchableOpacity
-      style={[styles.playlistCard, selectedPlaylistId === item.id && styles.playlistCardSelected]}
+      style={[
+        styles.playlistCard,
+        selectedPlaylistId === item.id && styles.playlistCardSelected,
+      ]}
       onPress={() => setSelectedPlaylistId(item.id)}>
       <View style={styles.playlistHeader}>
         <Text style={styles.playlistName}>{item.name}</Text>
@@ -87,7 +93,9 @@ export default function GroupPlaylistScreen({navigation}) {
 
         {/* Existing Playlists */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Mes Playlists ({Object.keys(groupPlaylists).length})</Text>
+          <Text style={styles.sectionTitle}>
+            Mes Playlists ({Object.keys(groupPlaylists).length})
+          </Text>
           {Object.values(groupPlaylists).length > 0 ? (
             <FlatList
               data={Object.values(groupPlaylists)}
@@ -129,9 +137,25 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
   },
-  headerTitle: {color: Colors.text, fontSize: 24, fontWeight: 'bold', marginLeft: 12},
-  section: {paddingHorizontal: 16, paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: Colors.border},
-  sectionTitle: {color: Colors.primary, fontSize: 16, fontWeight: '700', marginBottom: 12, textTransform: 'uppercase'},
+  headerTitle: {
+    color: Colors.text,
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginLeft: 12,
+  },
+  section: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  sectionTitle: {
+    color: Colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+  },
   input: {
     backgroundColor: Colors.surface,
     color: Colors.text,
@@ -151,9 +175,18 @@ const styles = StyleSheet.create({
     borderLeftColor: Colors.muted,
   },
   playlistCardSelected: {borderLeftColor: Colors.primary},
-  playlistHeader: {flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4},
+  playlistHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
   playlistName: {color: Colors.text, fontSize: 14, fontWeight: '600'},
   playlistCount: {color: Colors.muted, fontSize: 12},
   playlistMembers: {color: Colors.muted, fontSize: 12},
-  emptyText: {color: Colors.muted, fontSize: 14, textAlign: 'center', paddingVertical: 20},
+  emptyText: {
+    color: Colors.muted,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
 });
