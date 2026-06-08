@@ -10,7 +10,7 @@ export default function Lyrics() {
     <View style={theme.container}>
       <View style={{alignItems: 'center', paddingTop: 24}}>
         <Image
-          source={require('../../assets/images/lyrics.png')}
+          source={require('../../logo.png')}
           style={{width: 120, height: 120, borderRadius: 12}}
         />
       </View>
