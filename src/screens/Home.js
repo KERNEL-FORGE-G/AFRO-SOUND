@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+<<<<<<< HEAD
 import {getHomeData} from '../services/musicApi';
 import {usePlayer} from '../context/PlayerContext';
 
@@ -21,6 +22,27 @@ export default function Home({navigation}) {
     customSongs: [],
     recentTracks: [],
   });
+=======
+<<<<<<< HEAD
+import {getHomeData} from '../services/musicApi';
+import {usePlayer} from '../context/PlayerContext';
+
+export default function Home({navigation}) {
+  const [sections, setSections] = useState({
+    afrobeats: [],
+    topGlobal: [],
+    itunesAfro: [],
+    customSongs: [],
+    recentTracks: [],
+  });
+=======
+import {getSupabaseSongs} from '../services/musicApi';
+import {usePlayer} from '../context/PlayerContext';
+
+export default function Home({navigation}) {
+  const [songs, setSongs] = useState([]);
+>>>>>>> upstream/main
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
   const [isLoading, setIsLoading] = useState(true);
   const {playTrack} = usePlayer();
 
@@ -31,8 +53,18 @@ export default function Home({navigation}) {
   const fetchData = async () => {
     try {
       setIsLoading(true);
+<<<<<<< HEAD
       const data = await getHomeData();
       setSections(data);
+=======
+<<<<<<< HEAD
+      const data = await getHomeData();
+      setSections(data);
+=======
+      const data = await getSupabaseSongs();
+      setSongs(data);
+>>>>>>> upstream/main
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
     } catch (e) {
       console.error('Home fetchData error:', e.message);
     } finally {
@@ -45,6 +77,10 @@ export default function Home({navigation}) {
     navigation.navigate('NowPlaying', {track});
   };
 
+<<<<<<< HEAD
+  const renderRecentCard = (item, index, queue) => (
+=======
+<<<<<<< HEAD
   const renderRecentCard = (item, index, queue) => (
     <TouchableOpacity
       key={item.id || index}
@@ -101,17 +137,95 @@ export default function Home({navigation}) {
           </Text>
         </View>
       </View>
+=======
+  const renderTrackCard = (p, queue) => (
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
+    <TouchableOpacity
+      key={item.id || index}
+      style={styles.recentCard}
+      activeOpacity={0.8}
+      onPress={() => handlePlay(item, queue)}>
+      <Image
+        source={
+          item.cover
+            ? {uri: item.cover}
+            : item.cover_url
+            ? {uri: item.cover_url}
+            : require('../../logo.png')
+        }
+        style={styles.recentImage}
+      />
+      <Text style={styles.recentTitle} numberOfLines={2}>
+        {item.title}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderTrackCard = (p, index, queue) => (
+    <TouchableOpacity
+      key={p.id || index}
+      style={styles.card}
+      activeOpacity={0.9}
+      onPress={() => handlePlay(p, queue)}>
+<<<<<<< HEAD
+      <View>
+        <Image
+          source={
+            p.cover
+              ? {uri: p.cover}
+              : p.cover_url
+              ? {uri: p.cover_url}
+              : require('../../logo.png')
+          }
+          style={styles.cardImage}
+        />
+        <View
+          style={[
+            styles.sourceBadge,
+            p.source === 'itunes' && styles.itunesBadge,
+            p.source === 'jamendo' && styles.jamendoBadge,
+          ]}>
+          <Text style={styles.sourceBadgeText}>
+            {p.source === 'itunes'
+              ? 'iTunes'
+              : p.source === 'deezer'
+              ? 'Deezer'
+              : p.source === 'jamendo'
+              ? 'Jamendo'
+              : 'Local'}
+          </Text>
+        </View>
+      </View>
+=======
+      <Image
+        source={p.cover ? {uri: p.cover} : require('../../logo.png')}
+        style={styles.cardImage}
+      />
+>>>>>>> upstream/main
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
       <Text style={styles.cardTitle} numberOfLines={1}>
         {p.title}
       </Text>
       <Text style={styles.cardArtist} numberOfLines={1}>
+<<<<<<< HEAD
         {p.artist || p.artist_name || 'Artiste inconnu'}
+=======
+<<<<<<< HEAD
+        {p.artist || p.artist_name || 'Artiste inconnu'}
+=======
+        {p.artist || 'Artiste inconnu'}
+>>>>>>> upstream/main
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
       </Text>
     </TouchableOpacity>
   );
 
   return (
     <View style={[theme.container, styles.mainContainer]}>
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
       <ScrollView contentContainerStyle={{paddingBottom: 140}}>
         {/* Header */}
         <View style={styles.header}>
@@ -127,6 +241,7 @@ export default function Home({navigation}) {
             <TouchableOpacity onPress={fetchData} activeOpacity={0.8}>
               <Ionicons name="refresh-outline" size={24} color={Colors.primary} />
             </TouchableOpacity>
+<<<<<<< HEAD
           </View>
           <View style={styles.filtersRow}>
             <View style={styles.filterPill}>
@@ -181,6 +296,87 @@ export default function Home({navigation}) {
           </>
         )}
       </ScrollView>
+=======
+          </View>
+          <View style={styles.filtersRow}>
+            <View style={styles.filterPill}>
+              <Text style={styles.filterText}>Deezer</Text>
+            </View>
+            <View style={[styles.filterPill, {backgroundColor: '#1D1A29'}]}>
+              <Text style={styles.filterText}>iTunes</Text>
+            </View>
+          </View>
+        </View>
+
+        {isLoading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{marginTop: 80}} />
+        ) : (
+          <>
+            <View style={styles.recentGrid}>
+              {sections.recentTracks.slice(0, 6).map((item, i) => renderRecentCard(item, i, sections.recentTracks))}
+            </View>
+
+            {sections.customSongs.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, {marginTop: 28}]}>Vos titres (Supabase)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+                  {sections.customSongs.map((p, i) => renderTrackCard(p, i, sections.customSongs))}
+                </ScrollView>
+              </>
+            )}
+
+            <Text style={styles.sectionTitle}>Afrobeats</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+              {sections.afrobeats.map((p, i) => renderTrackCard(p, i, sections.afrobeats))}
+            </ScrollView>
+
+            <Text style={[styles.sectionTitle, {marginTop: 28}]}>Top Mondial</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+              {sections.topGlobal.map((p, i) => renderTrackCard(p, i, sections.topGlobal))}
+            </ScrollView>
+
+            <View style={styles.bannerContainer}>
+              <Image source={require('../../assets/2.jpg')} style={styles.bannerImage} resizeMode="cover" blurRadius={4} />
+              <View style={styles.bannerOverlay}>
+                <Text style={styles.bannerLabel}>Découverte</Text>
+                <Text style={styles.bannerHeadline}>Les meilleures pistes du moment</Text>
+                <Text style={styles.bannerNote}>Explore les nouveautés Afrobeats et iTunes dans une ambiance chaleureuse.</Text>
+              </View>
+            </View>
+
+            <Text style={[styles.sectionTitle, {marginTop: 28}]}>Découvertes iTunes</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
+              {sections.itunesAfro.map((p, i) => renderTrackCard(p, i, sections.itunesAfro))}
+            </ScrollView>
+          </>
+        )}
+      </ScrollView>
+=======
+      <View style={styles.header}>
+        <View style={styles.headerTop}>
+          <Text style={styles.greeting}>Bibliothèque</Text>
+          <TouchableOpacity onPress={fetchData} activeOpacity={0.8}>
+            <Ionicons name="refresh-outline" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator
+          size="large"
+          color={Colors.primary}
+          style={{marginTop: 80}}
+        />
+      ) : (
+        <ScrollView contentContainerStyle={{padding: 16}}>
+          <Text style={styles.sectionTitle}>Vos titres</Text>
+          <View style={styles.grid}>
+            {songs.map(p => renderTrackCard(p, songs))}
+          </View>
+        </ScrollView>
+      )}
+>>>>>>> upstream/main
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
     </View>
   );
 }
@@ -188,6 +384,10 @@ export default function Home({navigation}) {
 const styles = StyleSheet.create({
   mainContainer: {flex: 1, backgroundColor: Colors.background},
   header: {paddingHorizontal: 16, paddingTop: 40, paddingBottom: 16},
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
   headerTop: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20},
   profilePic: {width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.surface, marginRight: 12},
   greeting: {color: Colors.text, fontSize: 22, fontWeight: 'bold', letterSpacing: -0.5},
@@ -213,4 +413,40 @@ const styles = StyleSheet.create({
   bannerLabel: {color: Colors.primary, fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6},
   bannerHeadline: {color: Colors.text, fontSize: 18, fontWeight: '800', marginBottom: 4},
   bannerNote: {color: Colors.muted, fontSize: 12, lineHeight: 18},
+<<<<<<< HEAD
+=======
+=======
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  greeting: {color: Colors.text, fontSize: 24, fontWeight: 'bold'},
+  sectionTitle: {
+    color: Colors.text,
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  card: {width: '47%', marginBottom: 16},
+  cardImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: 16,
+    backgroundColor: Colors.surface,
+  },
+  cardTitle: {
+    color: Colors.text,
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cardArtist: {color: Colors.muted, fontSize: 12},
+>>>>>>> upstream/main
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
 });

@@ -12,7 +12,19 @@ export default function Loading() {
       />
       <Text style={styles.brand}>AFRO SOUND</Text>
       <Text style={styles.tagline}>Écoute tes racines</Text>
+<<<<<<< HEAD
       <ActivityIndicator size="large" color={Colors.primary} style={styles.spinner} />
+=======
+<<<<<<< HEAD
+      <ActivityIndicator size="large" color={Colors.primary} style={styles.spinner} />
+=======
+      <ActivityIndicator
+        size="large"
+        color={Colors.primary}
+        style={styles.spinner}
+      />
+>>>>>>> upstream/main
+>>>>>>> 6ca20f0853c25da4ea3c9ac371a85fe442bfef22
     </View>
   );
 }
