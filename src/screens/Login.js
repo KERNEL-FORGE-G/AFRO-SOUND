@@ -54,24 +54,6 @@ export default function LoginScreen({navigation}) {
     }
   };
 
-  const handleSpotifyLogin = async () => {
-    setLoading(true);
-    const result = await AuthService.spotifyOAuth();
-    setLoading(false);
-
-    if (result.success) {
-      setUserInfo(result.user);
-      setTokenInfo(result.session?.access_token);
-      Alert.alert('Succès', 'Connecté à Spotify !');
-      navigation.navigate('Home');
-    } else {
-      Alert.alert(
-        'Erreur',
-        result.error || 'Erreur lors de la connexion Spotify.',
-      );
-    }
-  };
-
   const handleLogoutLocal = async () => {
     setLoading(true);
     const result = await AuthService.logout();
@@ -137,14 +119,6 @@ export default function LoginScreen({navigation}) {
             disabled={loading}>
             <Ionicons name="logo-github" size={24} color={Colors.text} />
             <Text style={styles.socialButtonText}>GitHub</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.socialButton}
-            onPress={handleSpotifyLogin}
-            disabled={loading}>
-            <Ionicons name="musical-note" size={24} color={Colors.accent} />
-            <Text style={styles.socialButtonText}>Spotify</Text>
           </TouchableOpacity>
 
           {loading && (

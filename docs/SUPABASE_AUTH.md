@@ -21,7 +21,7 @@ consentement affiche bien le nom et le logo de **ton application AFRO SOUND**
   https://<PROJECT_REF>.supabase.co/auth/v1/callback
   ```
 - **Deep link mobile** (retour vers l'app après login) :
-  `com.afrSound://auth/callback` (voir `src/config/authConfig.js`).
+  `com.afrsound://auth/callback` (voir `src/config/authConfig.js`).
 
 ---
 
@@ -93,7 +93,7 @@ Dashboard Supabase → **Authentication → URL Configuration** :
 - **Site URL** : l'URL principale de l'app (ex. l'URL Vercel de production).
 - **Redirect URLs** : ajoute le deep link mobile pour revenir dans l'app :
   ```
-  com.afrSound://auth/callback
+  com.afrsound://auth/callback
   ```
 
 > Sans cette redirection autorisée, le retour dans l'app mobile après login
@@ -109,7 +109,7 @@ Dashboard Supabase → **Authentication → Emails** :
 
 ## 5. Configuration mobile (deep link Android)
 
-Pour que `com.afrSound://auth/callback` ramène vers l'app, déclare le scheme
+Pour que `com.afrsound://auth/callback` ramène vers l'app, déclare le scheme
 dans `android/app/src/main/AndroidManifest.xml`, dans l'activité principale :
 
 ```xml
@@ -117,13 +117,13 @@ dans `android/app/src/main/AndroidManifest.xml`, dans l'activité principale :
   <action android:name="android.intent.action.VIEW" />
   <category android:name="android.intent.category.DEFAULT" />
   <category android:name="android.intent.category.BROWSABLE" />
-  <data android:scheme="com.afrSound" android:host="auth" />
+  <data android:scheme="com.afrsound" android:host="auth" />
 </intent-filter>
 ```
 
 > ⚠️ **À vérifier** : l'`applicationId` Android est actuellement
 > `com.helloworld` (`android/app/build.gradle`). Le scheme de deep link
-> (`com.afrSound`) est indépendant de l'`applicationId`, mais il est recommandé
+> (`com.afrsound`) est indépendant de l'`applicationId`, mais il est recommandé
 > d'aligner l'`applicationId` sur quelque chose comme `com.afrosound` pour la
 > cohérence de la marque avant publication sur le Play Store.
 
@@ -156,6 +156,6 @@ La configuration des redirections/scopes est centralisée dans
 - [ ] GitHub : « Application name » = AFRO SOUND + logo.
 - [ ] GitHub : callback URL = `https://<PROJECT_REF>.supabase.co/auth/v1/callback`.
 - [ ] Supabase : providers Google + GitHub activés avec Client ID/Secret.
-- [ ] Supabase : `com.afrSound://auth/callback` ajouté aux Redirect URLs.
-- [ ] Android : intent-filter du scheme `com.afrSound` présent.
+- [ ] Supabase : `com.afrsound://auth/callback` ajouté aux Redirect URLs.
+- [ ] Android : intent-filter du scheme `com.afrsound` présent.
 - [ ] Test réel : l'écran de connexion affiche bien « AFRO SOUND ».
