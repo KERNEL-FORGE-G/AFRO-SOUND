@@ -1,9 +1,14 @@
+# Vercel ne sert que le backend serverless : on n'envoie que `backend/` + la
+# config. On ignore tout (*) puis on ré-inclut ce qui est nécessaire.
+# IMPORTANT : il faut ré-inclure le dossier `backend` LUI-MÊME (`!backend`)
+# avant son contenu (`!backend/**`) — sinon, un parent ignoré empêche la
+# ré-inclusion de ses fichiers et le build Vercel est vide (404 NOT_FOUND).
 *
-!backend/**
 !vercel.json
 !package.json
 !package-lock.json
-node_modules/
-android/
-ios/
-assets/
+!backend
+!backend/**
+
+# Ne jamais envoyer les dépendances installées du backend
+backend/node_modules
