@@ -2,6 +2,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {
   setUser,
   setToken,
+  setProvider,
   logout,
   socialLogin,
 } from '../store/slices/authSlice';
@@ -31,6 +32,10 @@ export const useAuth = () => {
     dispatch(setToken(tokenStr));
   };
 
+  const setProviderInfo = providerName => {
+    dispatch(setProvider(providerName));
+  };
+
   return {
     user,
     token,
@@ -41,6 +46,7 @@ export const useAuth = () => {
     handleLogout,
     setUserInfo,
     setTokenInfo,
+    setProviderInfo,
   };
 };
 

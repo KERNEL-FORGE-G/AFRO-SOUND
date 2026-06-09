@@ -1,9 +1,8 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TouchableOpacity,
   Animated,
   Easing,
@@ -12,28 +11,52 @@ import {
 import Slider from '@react-native-community/slider';
 import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {
+  usePlayer,
+  usePlaybackState,
+  useProgress,
+  State,
+  getPlaybackStateValue,
+} from '../context/PlayerContext';
+
+const getArtwork = track => track?.artwork || track?.cover || track?.cover_url;
+const getArtist = track =>
+  track?.artist || track?.artist_name || 'Artiste inconnu';
+const formatTime = secs => {
+  const safeSecs = Number.isFinite(secs) ? Math.max(0, secs) : 0;
+  const m = Math.floor(safeSecs / 60);
+  const s = Math.floor(safeSecs % 60);
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+};
 
 export default function NowPlaying({navigation, route}) {
-  const {track} = route.params;
-  const [isPlaying, setIsPlaying] = useState(true);
+  const routeTrack = route.params?.track;
+  const {
+    currentTrack,
+    queue,
+    togglePlayback,
+    skipToNext,
+    skipToPrevious,
+    seekTo,
+  } = usePlayer();
+  const playbackState = usePlaybackState();
+  const {position, duration} = useProgress(500);
   const [isLiked, setIsLiked] = useState(false);
-  const [position, setPosition] = useState(0);
-  const duration = track.duration || 200;
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekPreview, setSeekPreview] = useState(0);
 
-  useEffect(() => {
-    let interval;
-    if (isPlaying && position < duration) {
-      interval = setInterval(() => {
-        setPosition(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, position, duration]);
+  const track = currentTrack || routeTrack || {};
+  const playbackStateValue = getPlaybackStateValue(playbackState);
+  const isPlaying = playbackStateValue === State.Playing;
+  const displayedPosition = isSeeking ? seekPreview : position;
+  const displayedDuration = duration || track.duration || 0;
+  const artwork = getArtwork(track);
 
   const spinValue = useRef(new Animated.Value(0)).current;
+  const spinAnimation = useRef(null);
 
   useEffect(() => {
-    const spinAnimation = Animated.loop(
+    spinAnimation.current = Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
         duration: 12000,
@@ -42,27 +65,53 @@ export default function NowPlaying({navigation, route}) {
       }),
     );
 
+    return () => {
+      spinAnimation.current?.stop();
+    };
+  }, [spinValue]);
+
+  useEffect(() => {
     if (isPlaying) {
-      spinAnimation.start();
+      spinAnimation.current?.start();
     } else {
-      spinAnimation.stop();
+      spinAnimation.current?.stop();
     }
-    return () => spinAnimation.stop();
-  }, [isPlaying, spinValue]);
+  }, [isPlaying]);
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
   });
 
-  const formatTime = secs => {
-    const m = Math.floor(secs / 60);
-    const s = Math.floor(secs % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  const handleSeekComplete = async value => {
+    const nextPosition = Math.floor(value);
+    setSeekPreview(nextPosition);
+    setIsSeeking(false);
+    await seekTo(nextPosition);
+  };
+
+  const handleSkipPrevious = async () => {
+    try {
+      await skipToPrevious();
+    } catch (error) {
+      Alert.alert('Précédent', 'Aucune piste précédente dans la file.');
+    }
+  };
+
+  const handleSkipNext = async () => {
+    try {
+      await skipToNext();
+    } catch (error) {
+      Alert.alert('Suivant', 'Aucune piste suivante dans la file.');
+    }
   };
 
   const bottomActions = [
-    {icon: 'heart-outline', label: 'Like', onPress: () => setIsLiked(!isLiked)},
+    {
+      icon: isLiked ? 'heart' : 'heart-outline',
+      label: 'Like',
+      onPress: () => setIsLiked(!isLiked),
+    },
     {
       icon: 'text-outline',
       label: 'Paroles',
@@ -71,7 +120,15 @@ export default function NowPlaying({navigation, route}) {
     {
       icon: 'list-outline',
       label: 'File',
-      onPress: () => Alert.alert('File', "File d'attente"),
+      onPress: () =>
+        Alert.alert(
+          "File d'attente",
+          queue.length > 0
+            ? `${queue.length} titre${queue.length > 1 ? 's' : ''} chargé${
+                queue.length > 1 ? 's' : ''
+              }.`
+            : "Aucune file d'attente chargée.",
+        ),
     },
     {
       icon: 'share-social-outline',
@@ -101,9 +158,7 @@ export default function NowPlaying({navigation, route}) {
 
       <View style={styles.artContainer}>
         <Animated.Image
-          source={
-            track.cover_url ? {uri: track.cover_url} : require('../../logo.png')
-          }
+          source={artwork ? {uri: artwork} : require('../../logo.png')}
           style={[styles.art, {transform: [{rotate: spin}]}]}
         />
       </View>
@@ -111,9 +166,13 @@ export default function NowPlaying({navigation, route}) {
       <View style={styles.trackInfo}>
         <View style={styles.titleRow}>
           <View style={{flex: 1}}>
-            <Text style={styles.trackTitle}>{track.title}</Text>
+            <Text style={styles.trackTitle} numberOfLines={2}>
+              {track.title || 'Titre inconnu'}
+            </Text>
             <View style={styles.artistRow}>
-              <Text style={styles.trackArtist}>{track.artist}</Text>
+              <Text style={styles.trackArtist} numberOfLines={1}>
+                {getArtist(track)}
+              </Text>
               <TouchableOpacity onPress={() => setIsLiked(!isLiked)}>
                 <Ionicons
                   name={isLiked ? 'heart' : 'heart-outline'}
@@ -130,16 +189,20 @@ export default function NowPlaying({navigation, route}) {
         <Slider
           style={styles.slider}
           minimumValue={0}
-          maximumValue={duration}
-          value={position}
-          onSlidingComplete={val => setPosition(Math.floor(val))}
+          maximumValue={Math.max(displayedDuration, 1)}
+          value={Math.min(displayedPosition, Math.max(displayedDuration, 1))}
+          onValueChange={value => {
+            setIsSeeking(true);
+            setSeekPreview(value);
+          }}
+          onSlidingComplete={handleSeekComplete}
           minimumTrackTintColor={Colors.primary}
           maximumTrackTintColor={Colors.accent}
           thumbTintColor={Colors.primary}
         />
         <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(position)}</Text>
-          <Text style={styles.timeText}>{formatTime(duration)}</Text>
+          <Text style={styles.timeText}>{formatTime(displayedPosition)}</Text>
+          <Text style={styles.timeText}>{formatTime(displayedDuration)}</Text>
         </View>
       </View>
 
@@ -154,17 +217,13 @@ export default function NowPlaying({navigation, route}) {
           <Ionicons name="shuffle" size={26} color={Colors.primary} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.smallBtn}
-          onPress={() =>
-            Alert.alert('Précédent', 'Retour à la piste précédente')
-          }>
+        <TouchableOpacity style={styles.smallBtn} onPress={handleSkipPrevious}>
           <Ionicons name="play-skip-back" size={24} color={Colors.text} />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.bigBtn}
-          onPress={() => setIsPlaying(!isPlaying)}>
+          onPress={() => togglePlayback(playbackState)}>
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
             size={40}
@@ -173,9 +232,7 @@ export default function NowPlaying({navigation, route}) {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.smallBtn}
-          onPress={() => Alert.alert('Suivant', 'Passer à la piste suivante')}>
+        <TouchableOpacity style={styles.smallBtn} onPress={handleSkipNext}>
           <Ionicons name="play-skip-forward" size={24} color={Colors.text} />
         </TouchableOpacity>
 
@@ -248,6 +305,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 18,
     fontWeight: '600',
+    maxWidth: '85%',
   },
   trackAlbum: {
     color: Colors.accent,

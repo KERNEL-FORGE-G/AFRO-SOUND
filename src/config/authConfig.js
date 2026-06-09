@@ -1,4 +1,4 @@
-// OAuth Configuration for Supabase (Google, GitHub) and Spotify
+// OAuth Configuration for Supabase (Google, GitHub)
 
 export const OAUTH_PROVIDERS = {
   GOOGLE: 'google',
@@ -15,5 +15,8 @@ export const OAUTH_REDIRECT_URL = 'com.afrsound://auth/callback';
 // See: https://supabase.com/docs/guides/auth/oauth
 export const supabaseOAuthConfig = {
   redirectUrl: OAUTH_REDIRECT_URL,
-  scopes: ['openid', 'profile', 'email'],
+  scopes: {
+    [OAUTH_PROVIDERS.GOOGLE]: ['openid', 'profile', 'email'],
+    [OAUTH_PROVIDERS.GITHUB]: ['read:user', 'user:email'],
+  },
 };

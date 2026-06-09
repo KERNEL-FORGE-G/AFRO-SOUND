@@ -13,28 +13,40 @@ import {Colors} from '../theme';
 import AppButton from '../components/AppButton';
 import useAuth from '../hooks/useAuth';
 import AuthService from '../services/authService';
+import {OAUTH_PROVIDERS} from '../config/authConfig';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function LoginScreen({navigation}) {
-  const {user, status, handleLogout, setUserInfo, setTokenInfo} = useAuth();
+  const {user, handleLogout, setUserInfo, setTokenInfo, setProviderInfo} =
+    useAuth();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleGoogleLogin = async () => {
+  const completeLogin = (result, providerName = 'email') => {
+    setUserInfo(result.user);
+    setTokenInfo(result.session?.access_token);
+    setProviderInfo(providerName);
+    Alert.alert(
+      'Succès',
+      `Connecté en tant que ${result.user?.email || 'utilisateur AFRO SOUND'}`,
+    );
+    navigation.navigate('Home');
+  };
+
+  const handleOAuthLogin = async provider => {
     setLoading(true);
-    const result = await AuthService.supabaseOAuth('google');
+    const result = await AuthService.supabaseOAuth(provider);
     setLoading(false);
 
     if (result.success) {
-      setUserInfo(result.user);
-      setTokenInfo(result.session?.access_token);
-      Alert.alert('Succès', `Connecté en tant que ${result.user?.email}`);
-      navigation.navigate('Home');
+      completeLogin(result, provider);
     } else {
+      const providerLabel =
+        provider === OAUTH_PROVIDERS.GITHUB ? 'GitHub' : 'Google';
       Alert.alert(
         'Erreur',
-        result.error || 'Erreur lors de la connexion Google.',
+        result.error || `Erreur lors de la connexion ${providerLabel}.`,
       );
     }
   };
@@ -49,30 +61,9 @@ export default function LoginScreen({navigation}) {
     setLoading(false);
 
     if (result.success) {
-      setUserInfo(result.user);
-      setTokenInfo(result.session?.access_token);
-      Alert.alert('Succès', `Connecté en tant que ${result.user?.email}`);
-      navigation.navigate('Home');
+      completeLogin(result);
     } else {
       Alert.alert('Erreur', result.error || 'Erreur lors de la connexion.');
-    }
-  };
-
-  const handleGitHubLogin = async () => {
-    setLoading(true);
-    const result = await AuthService.supabaseOAuth('github');
-    setLoading(false);
-
-    if (result.success) {
-      setUserInfo(result.user);
-      setTokenInfo(result.session?.access_token);
-      Alert.alert('Succès', `Connecté en tant que ${result.user?.email}`);
-      navigation.navigate('Home');
-    } else {
-      Alert.alert(
-        'Erreur',
-        result.error || 'Erreur lors de la connexion GitHub.',
-      );
     }
   };
 
@@ -135,6 +126,7 @@ export default function LoginScreen({navigation}) {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
+            editable={!loading}
           />
           <TextInput
             style={styles.input}
@@ -143,6 +135,7 @@ export default function LoginScreen({navigation}) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            editable={!loading}
           />
           <AppButton
             title="Se connecter"
@@ -151,12 +144,12 @@ export default function LoginScreen({navigation}) {
           />
 
           <View style={{marginVertical: 20}}>
-            <Text style={{color: Colors.muted, textAlign: 'center'}}>Ou se connecter avec</Text>
+            <Text style={styles.dividerText}>Ou se connecter avec</Text>
           </View>
 
           <TouchableOpacity
             style={styles.socialButton}
-            onPress={handleGoogleLogin}
+            onPress={() => handleOAuthLogin(OAUTH_PROVIDERS.GOOGLE)}
             disabled={loading}>
             <Ionicons name="logo-google" size={24} color={Colors.text} />
             <Text style={styles.socialButtonText}>Google</Text>
@@ -164,7 +157,7 @@ export default function LoginScreen({navigation}) {
 
           <TouchableOpacity
             style={styles.socialButton}
-            onPress={handleGitHubLogin}
+            onPress={() => handleOAuthLogin(OAUTH_PROVIDERS.GITHUB)}
             disabled={loading}>
             <Ionicons name="logo-github" size={24} color={Colors.text} />
             <Text style={styles.socialButtonText}>GitHub</Text>
@@ -229,6 +222,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 16,
   },
+  dividerText: {color: Colors.muted, textAlign: 'center'},
   socialButton: {
     flexDirection: 'row',
     alignItems: 'center',
