@@ -11,6 +11,25 @@ const extractParam = (url, key) => {
 // OAuth Service for handling social logins (Google, GitHub) via Supabase
 export class AuthService {
   /**
+   * Connexion via email et mot de passe avec Supabase.
+   */
+  static async emailPasswordLogin(email, password) {
+    try {
+      const {data, error} = await supabaseClient.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) {
+        throw error;
+      }
+      return {success: true, session: data?.session, user: data?.user};
+    } catch (error) {
+      console.error('[AuthService] Login error:', error.message);
+      return {success: false, error: error.message};
+    }
+  }
+
+  /**
    * Connexion via Supabase OAuth (Google ou GitHub) en flux PKCE :
    *  1. on récupère l'URL d'autorisation (sans redirection auto),
    *  2. on ouvre le navigateur système,

@@ -7,6 +7,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import {Colors} from '../theme';
 import AppButton from '../components/AppButton';
@@ -17,6 +18,8 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 export default function LoginScreen({navigation}) {
   const {user, status, handleLogout, setUserInfo, setTokenInfo} = useAuth();
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleGoogleLogin = async () => {
     setLoading(true);
@@ -33,6 +36,25 @@ export default function LoginScreen({navigation}) {
         'Erreur',
         result.error || 'Erreur lors de la connexion Google.',
       );
+    }
+  };
+
+  const handleEmailPasswordLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs.');
+      return;
+    }
+    setLoading(true);
+    const result = await AuthService.emailPasswordLogin(email, password);
+    setLoading(false);
+
+    if (result.success) {
+      setUserInfo(result.user);
+      setTokenInfo(result.session?.access_token);
+      Alert.alert('Succès', `Connecté en tant que ${result.user?.email}`);
+      navigation.navigate('Home');
+    } else {
+      Alert.alert('Erreur', result.error || 'Erreur lors de la connexion.');
     }
   };
 
@@ -103,7 +125,34 @@ export default function LoginScreen({navigation}) {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Se connecter avec</Text>
+          <Text style={styles.sectionTitle}>Se connecter</Text>
+
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor={Colors.muted}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Mot de passe"
+            placeholderTextColor={Colors.muted}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
+          <AppButton
+            title="Se connecter"
+            onPress={handleEmailPasswordLogin}
+            disabled={loading}
+          />
+
+          <View style={{marginVertical: 20}}>
+            <Text style={{color: Colors.muted, textAlign: 'center'}}>Ou se connecter avec</Text>
+          </View>
 
           <TouchableOpacity
             style={styles.socialButton}
@@ -171,6 +220,14 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
+  },
+  input: {
+    backgroundColor: Colors.surface,
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    color: Colors.text,
+    fontSize: 16,
   },
   socialButton: {
     flexDirection: 'row',
