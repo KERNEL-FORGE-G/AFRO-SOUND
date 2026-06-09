@@ -37,8 +37,8 @@ export default function SearchResults({route, navigation}) {
   const renderItem = ({item}) => (
     <TouchableOpacity
       style={styles.item}
-      onPress={() => {
-        playTrack(item, results);
+      onPress={async () => {
+        await playTrack(item, results);
         navigation.navigate('NowPlaying', {track: item});
       }}>
       <Image

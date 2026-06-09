@@ -20,6 +20,28 @@ const PlayerContext = createContext(null);
 
 let playerReady = false;
 
+const getPlaybackStateValue = playbackState =>
+  typeof playbackState === 'object' && playbackState !== null
+    ? playbackState.state
+    : playbackState;
+
+const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl;
+const getTrackArtwork = track =>
+  track?.cover || track?.cover_url || track?.artwork || '';
+const getTrackArtist = track =>
+  track?.artist || track?.artist_name || 'Artiste inconnu';
+
+const normalizeTrack = track => ({
+  id: String(track.id || track.url || track.audioUrl || track.title),
+  url: getTrackUrl(track),
+  title: track.title || 'Titre inconnu',
+  artist: getTrackArtist(track),
+  album: track.album || '',
+  artwork: getTrackArtwork(track),
+  duration: track.duration || 30,
+  source: track.source || '',
+});
+
 /**
  * Configure le player une seule fois au démarrage
  */
@@ -74,18 +96,32 @@ export function PlayerProvider({children}) {
     }
   });
 
+  const ensureSetup = useCallback(async () => {
+    if (!isSetup) {
+      await setupPlayer();
+      setIsSetup(true);
+    }
+  }, [isSetup]);
+
   const downloadTrack = useCallback(async track => {
+    const url = getTrackUrl(track);
+    if (!url) {
+      Alert.alert('Erreur', 'Aucune URL audio disponible pour ce morceau.');
+      return;
+    }
+
     const {dirs} = RNFetchBlob.fs;
-    const filePath = `${dirs.DocumentDir}/${track.title.replace(
-      / /g,
+    const safeTitle = (track.title || 'afro_sound_track').replace(
+      /[^a-z0-9_-]/gi,
       '_',
-    )}.mp3`;
+    );
+    const filePath = `${dirs.DocumentDir}/${safeTitle}.mp3`;
 
     try {
       await RNFetchBlob.config({
         fileCache: true,
         path: filePath,
-      }).fetch('GET', track.audioUrl);
+      }).fetch('GET', url);
 
       Alert.alert('Succès', 'Le morceau a été téléchargé.');
     } catch (error) {
@@ -102,6 +138,19 @@ export function PlayerProvider({children}) {
     await TrackPlayer.skipToPrevious();
   }, []);
 
+  const seekTo = useCallback(async position => {
+    await TrackPlayer.seekTo(position);
+  }, []);
+
+  const togglePlayback = useCallback(async playbackState => {
+    const state = getPlaybackStateValue(playbackState);
+    if (state === State.Playing || state === State.Buffering) {
+      await TrackPlayer.pause();
+      return;
+    }
+    await TrackPlayer.play();
+  }, []);
+
   /**
    * Joue une piste (et charge la file d'attente si fournie)
    * @param {object} track  - La piste à lire
@@ -110,42 +159,37 @@ export function PlayerProvider({children}) {
   const playTrack = useCallback(
     async (track, tracks = []) => {
       try {
-        if (!isSetup) {
-          await setupPlayer();
-          setIsSetup(true);
+        await ensureSetup();
+
+        const playableTracks = (tracks.length > 0 ? tracks : [track])
+          .filter(item => getTrackUrl(item))
+          .map(normalizeTrack);
+        const selectedTrack = normalizeTrack(track);
+
+        if (!selectedTrack.url || playableTracks.length === 0) {
+          Alert.alert(
+            'Erreur',
+            'Ce titre ne contient pas de flux audio lisible.',
+          );
+          return;
         }
 
-        // Convertit en format TrackPlayer
-        const toTP = t => ({
-          id: t.id,
-          url: t.audioUrl,
-          title: t.title,
-          artist: t.artist,
-          album: t.album || '',
-          artwork: t.cover || '',
-          duration: t.duration || 30,
-        });
-
         await TrackPlayer.reset();
+        await TrackPlayer.add(playableTracks);
 
-        // Charge toute la file, ou juste la piste seule
-        const trackList = tracks.length > 0 ? tracks : [track];
-        await TrackPlayer.add(trackList.map(toTP));
-
-        // Démarre à la bonne position dans la file
-        const idx = trackList.findIndex(t => t.id === track.id);
+        const idx = playableTracks.findIndex(t => t.id === selectedTrack.id);
         if (idx > 0) {
           await TrackPlayer.skip(idx);
         }
 
         await TrackPlayer.play();
-        setCurrentTrack(toTP(track));
-        setQueue(trackList);
+        setCurrentTrack(selectedTrack);
+        setQueue(playableTracks);
       } catch (e) {
         console.error('[PlayerContext] playTrack error:', e.message);
       }
     },
-    [isSetup],
+    [ensureSetup],
   );
 
   return (
@@ -157,6 +201,8 @@ export function PlayerProvider({children}) {
         downloadTrack,
         skipToNext,
         skipToPrevious,
+        seekTo,
+        togglePlayback,
       }}>
       {children}
     </PlayerContext.Provider>
@@ -172,4 +218,4 @@ export const usePlayer = () => {
 };
 
 // Ré-exporte les hooks utiles de track-player pour les écrans
-export {usePlaybackState, useProgress, State};
+export {usePlaybackState, useProgress, State, getPlaybackStateValue};

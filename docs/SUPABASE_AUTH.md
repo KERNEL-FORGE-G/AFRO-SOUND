@@ -5,8 +5,10 @@ Ce guide explique comment configurer l'authentification sociale **Google** et
 consentement affiche bien le nom et le logo de **ton application AFRO SOUND**
 (et non « Supabase » ou un nom générique).
 
-> Rappel : on utilise **uniquement Supabase** (pas de Firebase). Google/GitHub
-> sont branchés comme fournisseurs OAuth de Supabase.
+> Rappel : le code mobile utilise **Supabase Auth**. Il ne charge pas le SDK
+> Firebase : Google/GitHub sont branchés comme fournisseurs OAuth de Supabase.
+> Si tu voulais réellement Firebase Authentication, il faudrait ajouter le SDK
+> Firebase et migrer le service d'authentification.
 
 ---
 
@@ -14,8 +16,8 @@ consentement affiche bien le nom et le logo de **ton application AFRO SOUND**
 
 - **Nom de l'app** : AFRO SOUND (déjà défini dans `app.json` → `displayName`).
 - **URL Supabase** : `https://<PROJECT_REF>.supabase.co`
-  (ton projet actuel : `https://xwymtclxyqpgqknsfrtu.supabase.co`,
-  donc `PROJECT_REF = xwymtclxyqpgqknsfrtu`).
+  (ton projet actuel côté app : `https://pijrddmcjivmfezfyvjf.supabase.co`,
+  donc `PROJECT_REF = pijrddmcjivmfezfyvjf`).
 - **URL de callback Supabase** (la même pour Google et GitHub) :
   ```
   https://<PROJECT_REF>.supabase.co/auth/v1/callback
@@ -40,11 +42,12 @@ le `Client Secret` issus de Google/GitHub.
 ## 2. Google — écran de consentement « AFRO SOUND »
 
 ### 2.1 Créer l'écran de consentement OAuth
+
 1. Va sur [Google Cloud Console](https://console.cloud.google.com/) → crée (ou
    sélectionne) un projet.
 2. **APIs & Services → OAuth consent screen**.
    - **User type** : External.
-   - **App name** : `AFRO SOUND`  ← **c'est ce nom qui s'affiche à l'utilisateur**.
+   - **App name** : `AFRO SOUND` ← **c'est ce nom qui s'affiche à l'utilisateur**.
    - **User support email** : ton email.
    - **App logo** : téléverse `logo.png` (le logo AFRO SOUND) pour qu'il
      apparaisse sur l'écran de connexion.
@@ -55,6 +58,7 @@ le `Client Secret` issus de Google/GitHub.
 4. Publie l'écran (ou ajoute des « Test users » tant que l'app est en mode test).
 
 ### 2.2 Créer les identifiants OAuth
+
 1. **APIs & Services → Credentials → Create Credentials → OAuth client ID**.
 2. **Application type** : Web application.
 3. **Name** : `AFRO SOUND Web` (usage interne).
@@ -65,6 +69,7 @@ le `Client Secret` issus de Google/GitHub.
 5. Récupère le **Client ID** et le **Client Secret**.
 
 ### 2.3 Brancher dans Supabase
+
 1. Dashboard Supabase → **Authentication → Providers → Google**.
 2. Active le provider, colle le **Client ID** et le **Client Secret**.
 3. Enregistre.
@@ -74,7 +79,7 @@ le `Client Secret` issus de Google/GitHub.
 ## 3. GitHub — OAuth App « AFRO SOUND »
 
 1. GitHub → **Settings → Developer settings → OAuth Apps → New OAuth App**.
-   - **Application name** : `AFRO SOUND`  ← **nom affiché à l'utilisateur**.
+   - **Application name** : `AFRO SOUND` ← **nom affiché à l'utilisateur**.
    - **Homepage URL** : l'URL de ton app/landing (ex. l'URL Vercel).
    - **Application logo** (après création) : téléverse le logo AFRO SOUND.
    - **Authorization callback URL** :
@@ -90,6 +95,7 @@ le `Client Secret` issus de Google/GitHub.
 ## 4. Configuration Supabase (URLs de redirection)
 
 Dashboard Supabase → **Authentication → URL Configuration** :
+
 - **Site URL** : l'URL principale de l'app (ex. l'URL Vercel de production).
 - **Redirect URLs** : ajoute le deep link mobile pour revenir dans l'app :
   ```
@@ -100,7 +106,9 @@ Dashboard Supabase → **Authentication → URL Configuration** :
 > échouera.
 
 ### Branding des emails (optionnel mais recommandé)
+
 Dashboard Supabase → **Authentication → Emails** :
+
 - **Sender name** : `AFRO SOUND` (pour que les emails de confirmation /
   réinitialisation viennent de « AFRO SOUND »).
 - Personnalise les templates (sujet et contenu) avec le nom et le logo.
@@ -159,3 +167,5 @@ La configuration des redirections/scopes est centralisée dans
 - [ ] Supabase : `com.afrsound://auth/callback` ajouté aux Redirect URLs.
 - [ ] Android : intent-filter du scheme `com.afrsound` présent.
 - [ ] Test réel : l'écran de connexion affiche bien « AFRO SOUND ».
+- [ ] Test réel : après le consentement Google/GitHub, le navigateur revient dans
+      l'app via `com.afrsound://auth/callback` et la session est persistée.

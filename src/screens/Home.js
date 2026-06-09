@@ -40,8 +40,8 @@ export default function Home({navigation}) {
     }
   };
 
-  const handlePlay = (track, queue) => {
-    playTrack(track, queue);
+  const handlePlay = async (track, queue) => {
+    await playTrack(track, queue);
     navigation.navigate('NowPlaying', {track});
   };
 

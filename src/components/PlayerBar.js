@@ -3,27 +3,23 @@ import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {usePlayer, State, usePlaybackState} from '../context/PlayerContext';
-import TrackPlayer from 'react-native-track-player';
+import {
+  usePlayer,
+  State,
+  usePlaybackState,
+  getPlaybackStateValue,
+} from '../context/PlayerContext';
 
 export default function PlayerBar() {
   const navigation = useNavigation();
-  const {currentTrack} = usePlayer();
+  const {currentTrack, togglePlayback} = usePlayer();
   const playbackState = usePlaybackState();
 
   if (!currentTrack) {
     return null;
   }
 
-  const isPlaying = playbackState.state === State.Playing;
-
-  const togglePlayback = async () => {
-    if (isPlaying) {
-      await TrackPlayer.pause();
-    } else {
-      await TrackPlayer.play();
-    }
-  };
+  const isPlaying = getPlaybackStateValue(playbackState) === State.Playing;
 
   return (
     <TouchableOpacity
@@ -48,7 +44,9 @@ export default function PlayerBar() {
           </Text>
         </View>
       </View>
-      <TouchableOpacity style={styles.playButton} onPress={togglePlayback}>
+      <TouchableOpacity
+        style={styles.playButton}
+        onPress={() => togglePlayback(playbackState)}>
         <Ionicons
           name={isPlaying ? 'pause' : 'play'}
           size={22}
