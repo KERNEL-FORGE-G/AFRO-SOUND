@@ -26,7 +26,7 @@ export default function ChooseMode({navigation}) {
 
         <TouchableOpacity
           style={[styles.bigButton, styles.alt]}
-          onPress={() => navigation.replace('Register')}
+          onPress={() => navigation.replace('Login')}
           activeOpacity={0.9}>
           <Text style={[styles.buttonText, {color: '#FDFBF7'}]}>
             Se connecter / S'inscrire
