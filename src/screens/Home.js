@@ -177,7 +177,7 @@ export default function Home({navigation}) {
           <View style={styles.headerTop}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
               <TouchableOpacity
-                onPress={() => navigation.navigate('Bibliothèque')}
+                onPress={() => navigation.navigate('Profile')}
                 activeOpacity={0.8}>
                 <View style={styles.profilePic} />
               </TouchableOpacity>

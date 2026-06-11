@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -9,21 +9,52 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import theme, {Colors} from '../theme';
-
-const recentSearches = [
-  'Happier Than Ever',
-  'Drake',
-  'Mix Pop',
-  'Podcasts Humour',
-];
+import {supabase} from '../supabaseClient';
+import useAuth from '../hooks/useAuth';
 
 export default function Search({navigation}) {
+  const {user} = useAuth();
   const [query, setQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState([]);
 
-  const handleSearch = () => {
-    // On ne navigue que si le champ n'est pas vide
-    if (query.trim().length > 0) {
-      navigation.navigate('SearchResults', {query});
+  useEffect(() => {
+    if (user) {
+        fetchRecentSearches();
+    }
+  }, [user]);
+
+  const fetchRecentSearches = async () => {
+    try {
+        const {data} = await supabase
+            .from('search_history')
+            .select('query')
+            .eq('user_id', user.id)
+            .order('searched_at', {ascending: false})
+            .limit(10);
+
+        if (data) {
+            // Remove duplicates
+            const unique = [...new Set(data.map(d => d.query))];
+            setRecentSearches(unique);
+        }
+    } catch (e) {
+        console.warn(e.message);
+    }
+  };
+
+  const handleSearch = async (overrideQuery) => {
+    const finalQuery = overrideQuery || query;
+    if (finalQuery.trim().length > 0) {
+      if (user) {
+        // Enregistrer la recherche
+        try {
+            await supabase.from('search_history').insert([
+                {user_id: user.id, query: finalQuery.trim()}
+            ]);
+            fetchRecentSearches();
+        } catch (e) {}
+      }
+      navigation.navigate('SearchResults', {query: finalQuery.trim()});
     }
   };
 
@@ -57,12 +88,15 @@ export default function Search({navigation}) {
             key={index}
             style={styles.recentItem}
             activeOpacity={0.8}
-            onPress={() => navigation.navigate('SearchResults', {query: item})}>
+            onPress={() => handleSearch(item)}>
             <Ionicons name="time-outline" size={24} color={Colors.muted} />
             <Text style={styles.recentItemText}>{item}</Text>
             <Ionicons name="close-outline" size={24} color="#C4A484" />
           </TouchableOpacity>
         ))}
+        {recentSearches.length === 0 && (
+            <Text style={styles.emptyText}>Aucune recherche récente</Text>
+        )}
       </ScrollView>
     </View>
   );
@@ -112,4 +146,5 @@ const styles = StyleSheet.create({
   recentList: {flex: 1},
   recentItem: {flexDirection: 'row', alignItems: 'center', marginBottom: 20},
   recentItemText: {flex: 1, color: Colors.text, fontSize: 16, marginLeft: 16},
+  emptyText: {color: Colors.muted, textAlign: 'center', marginTop: 20},
 });

@@ -15,6 +15,7 @@ import TrackPlayer, {
 } from 'react-native-track-player';
 import {Alert} from 'react-native';
 import RNFetchBlob from 'rn-fetch-blob';
+import {supabase} from '../supabaseClient';
 
 const PlayerContext = createContext(null);
 
@@ -88,11 +89,25 @@ export function PlayerProvider({children}) {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [queue, setQueue] = useState([]);
   const [isSetup, setIsSetup] = useState(false);
+  const [repeatMode, setRepeatMode] = useState('off'); // 'off' | 'track' | 'queue'
+  const [isShuffle, setIsShuffle] = useState(false);
 
   // Écoute les changements de piste
   useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async event => {
     if (event.track) {
       setCurrentTrack(event.track);
+
+      // Enregistrer dans l'historique si un utilisateur est connecté
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && event.track.id) {
+          await supabase.from('play_history').insert([
+            { user_id: user.id, track_id: event.track.id }
+          ]);
+        }
+      } catch (e) {
+        console.warn('History recording failed:', e.message);
+      }
     }
   });
 
@@ -151,6 +166,47 @@ export function PlayerProvider({children}) {
     await TrackPlayer.play();
   }, []);
 
+  const toggleRepeat = useCallback(async () => {
+    let nextMode = 'off';
+    let rpMode = RepeatMode.Off;
+
+    if (repeatMode === 'off') {
+      nextMode = 'track';
+      rpMode = RepeatMode.Track;
+    } else if (repeatMode === 'track') {
+      nextMode = 'queue';
+      rpMode = RepeatMode.Queue;
+    }
+
+    await TrackPlayer.setRepeatMode(rpMode);
+    setRepeatMode(nextMode);
+  }, [repeatMode]);
+
+  const toggleShuffle = useCallback(async () => {
+    const nextShuffle = !isShuffle;
+    setIsShuffle(nextShuffle);
+
+    if (nextShuffle && queue.length > 0) {
+      // Create a shuffled version of the queue, keeping current track at start
+      const currentIdx = await TrackPlayer.getActiveTrackIndex();
+      const tracks = [...queue];
+      const current = tracks.splice(currentIdx, 1)[0];
+
+      for (let i = tracks.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+      }
+
+      const newQueue = [current, ...tracks];
+      await TrackPlayer.reset();
+      await TrackPlayer.add(newQueue);
+      await TrackPlayer.play();
+    } else if (!nextShuffle && queue.length > 0) {
+        // Reset to original order if we had it stored?
+        // For simplicity, we just keep the current order for now
+    }
+  }, [isShuffle, queue]);
+
   /**
    * Joue une piste (et charge la file d'attente si fournie)
    * @param {object} track  - La piste à lire
@@ -203,6 +259,10 @@ export function PlayerProvider({children}) {
         skipToPrevious,
         seekTo,
         togglePlayback,
+        repeatMode,
+        toggleRepeat,
+        isShuffle,
+        toggleShuffle,
       }}>
       {children}
     </PlayerContext.Provider>

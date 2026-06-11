@@ -45,7 +45,8 @@ module.exports = `<!DOCTYPE html>
             const chartRefs = {
                 sources: React.useRef(null),
                 visibility: React.useRef(null),
-                top: React.useRef(null)
+                top: React.useRef(null),
+                searches: React.useRef(null)
             };
 
             useEffect(() => {
@@ -105,6 +106,31 @@ module.exports = `<!DOCTYPE html>
                     }
                 }));
 
+                // Top Searches
+                if (stats.topSearches && chartRefs.searches.current) {
+                    const searchCtx = chartRefs.searches.current.getContext('2d');
+                    charts.push(new Chart(searchCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: stats.topSearches.map(s => s.query),
+                            datasets: [{
+                                label: 'Recherches',
+                                data: stats.topSearches.map(s => s.count),
+                                backgroundColor: '#10b981',
+                                borderRadius: 8
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            scales: {
+                                x: { grid: { color: '#262b33' }, ticks: { color: '#9ca3af' } },
+                                y: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    }));
+                }
+
                 return () => {
                     charts.forEach(c => c.destroy());
                 };
@@ -149,10 +175,18 @@ module.exports = `<!DOCTYPE html>
                         </div>
                     </div>
 
-                    <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg mb-10">
-                        <h3 className="text-lg font-semibold mb-6">Top 5 - Titres les plus écoutés</h3>
-                        <div className="chart-container" style={{ height: '250px' }}>
-                            <canvas ref={chartRefs.top}></canvas>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                        <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg">
+                            <h3 className="text-lg font-semibold mb-6">Top 5 - Titres écoutés</h3>
+                            <div className="chart-container" style={{ height: '250px' }}>
+                                <canvas ref={chartRefs.top}></canvas>
+                            </div>
+                        </div>
+                        <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg">
+                            <h3 className="text-lg font-semibold mb-6">Top 5 - Recherches populaires</h3>
+                            <div className="chart-container" style={{ height: '250px' }}>
+                                <canvas ref={chartRefs.searches}></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>

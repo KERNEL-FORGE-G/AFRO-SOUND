@@ -312,6 +312,23 @@ app.get('/api/admin/stats', auth, async (req, res) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
+    // 5. Recherches les plus fréquentes
+    const { data: searchHistory } = await supabase
+      .from('search_history')
+      .select('query')
+      .limit(1000);
+
+    const searchCounts = (searchHistory || []).reduce((acc, s) => {
+      const q = s.query?.toLowerCase().trim();
+      if (q) acc[q] = (acc[q] || 0) + 1;
+      return acc;
+    }, {});
+
+    const topSearches = Object.entries(searchCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([query, count]) => ({ query, count }));
+
     res.json({
       success: true,
       data: {
@@ -322,7 +339,8 @@ app.get('/api/admin/stats', auth, async (req, res) => {
         },
         trackSources: sourceCounts,
         playlistVisibility: visibilityCounts,
-        topTracks
+        topTracks,
+        topSearches
       }
     });
   } catch (error) {
