@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import theme, {Colors} from '../theme';
+import {Colors} from '../theme';
 
 const recentSearches = [
   'Happier Than Ever',
@@ -34,13 +34,13 @@ export default function Search({navigation}) {
         <Ionicons
           name="search"
           size={24}
-          color={Colors.background}
+          color={Colors.muted}
           style={styles.searchIcon}
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="Que souhaitez-vous écouter sur AFRO SOUND ?"
-          placeholderTextColor="#A69485"
+          placeholder="Que souhaitez-vous écouter ?"
+          placeholderTextColor={Colors.muted}
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={handleSearch}
@@ -60,7 +60,7 @@ export default function Search({navigation}) {
             onPress={() => navigation.navigate('SearchResults', {query: item})}>
             <Ionicons name="time-outline" size={24} color={Colors.muted} />
             <Text style={styles.recentItemText}>{item}</Text>
-            <Ionicons name="close-outline" size={24} color="#C4A484" />
+            <Ionicons name="close-outline" size={24} color={Colors.muted} />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -82,23 +82,20 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   searchBar: {
-    backgroundColor: '#FDFBF7',
-    borderRadius: 24,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   searchIcon: {marginRight: 12},
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: Colors.background,
+    color: Colors.text,
     padding: 0,
     fontWeight: '500',
   },

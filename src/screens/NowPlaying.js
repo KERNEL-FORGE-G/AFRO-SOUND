@@ -16,6 +16,7 @@ import {
   usePlaybackState,
   useProgress,
   State,
+  RepeatMode,
   getPlaybackStateValue,
 } from '../context/PlayerContext';
 
@@ -34,10 +35,15 @@ export default function NowPlaying({navigation, route}) {
   const {
     currentTrack,
     queue,
+    isShuffle,
+    repeatMode,
     togglePlayback,
     skipToNext,
     skipToPrevious,
     seekTo,
+    toggleShuffle,
+    cycleRepeatMode,
+    downloadTrack,
   } = usePlayer();
   const playbackState = usePlaybackState();
   const {position, duration} = useProgress(500);
@@ -59,7 +65,7 @@ export default function NowPlaying({navigation, route}) {
     spinAnimation.current = Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
-        duration: 12000,
+        duration: 15000,
         easing: Easing.linear,
         useNativeDriver: true,
       }),
@@ -94,7 +100,7 @@ export default function NowPlaying({navigation, route}) {
     try {
       await skipToPrevious();
     } catch (error) {
-      Alert.alert('Précédent', 'Aucune piste précédente dans la file.');
+      console.warn('Skip Previous Error', error);
     }
   };
 
@@ -102,7 +108,7 @@ export default function NowPlaying({navigation, route}) {
     try {
       await skipToNext();
     } catch (error) {
-      Alert.alert('Suivant', 'Aucune piste suivante dans la file.');
+      console.warn('Skip Next Error', error);
     }
   };
 
@@ -110,12 +116,18 @@ export default function NowPlaying({navigation, route}) {
     {
       icon: isLiked ? 'heart' : 'heart-outline',
       label: 'Like',
+      active: isLiked,
       onPress: () => setIsLiked(!isLiked),
     },
     {
       icon: 'text-outline',
       label: 'Paroles',
       onPress: () => navigation.navigate('Lyrics'),
+    },
+    {
+      icon: 'download-outline',
+      label: 'Télécharger',
+      onPress: () => downloadTrack(track),
     },
     {
       icon: 'list-outline',
@@ -130,59 +142,54 @@ export default function NowPlaying({navigation, route}) {
             : "Aucune file d'attente chargée.",
         ),
     },
-    {
-      icon: 'share-social-outline',
-      label: 'Partager',
-      onPress: () => Alert.alert('Partager', 'Partager ce titre'),
-    },
   ];
 
+  const getRepeatIcon = () => {
+    if (repeatMode === RepeatMode.Track) return 'repeat';
+    return 'repeat';
+  };
+
+  const getRepeatColor = () => {
+    if (repeatMode === RepeatMode.Off) return Colors.muted;
+    return Colors.primary;
+  };
+
   return (
-    <View style={theme.container}>
+    <View style={[theme.container, styles.main]}>
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           activeOpacity={0.8}
           style={styles.headerIcon}>
-          <Ionicons name="chevron-back" size={28} color={Colors.primary} />
+          <Ionicons name="chevron-down" size={32} color={Colors.text} />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Lecture en cours</Text>
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.headerIcon}
           onPress={() =>
             Alert.alert('Options', 'Menu des options de la piste.')
           }>
-          <Ionicons name="ellipsis-vertical" size={24} color={Colors.primary} />
+          <Ionicons name="ellipsis-horizontal" size={24} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.artContainer}>
-        <Animated.Image
-          source={artwork ? {uri: artwork} : require('../../logo.png')}
-          style={[styles.art, {transform: [{rotate: spin}]}]}
-        />
+        <View style={styles.artWrapper}>
+          <Animated.Image
+            source={artwork ? {uri: artwork} : require('../../logo.png')}
+            style={[styles.art, {transform: [{rotate: spin}]}]}
+          />
+        </View>
       </View>
 
       <View style={styles.trackInfo}>
-        <View style={styles.titleRow}>
-          <View style={{flex: 1}}>
-            <Text style={styles.trackTitle} numberOfLines={2}>
-              {track.title || 'Titre inconnu'}
-            </Text>
-            <View style={styles.artistRow}>
-              <Text style={styles.trackArtist} numberOfLines={1}>
-                {getArtist(track)}
-              </Text>
-              <TouchableOpacity onPress={() => setIsLiked(!isLiked)}>
-                <Ionicons
-                  name={isLiked ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={Colors.primary}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+        <Text style={styles.trackTitle} numberOfLines={1}>
+          {track.title || 'Titre inconnu'}
+        </Text>
+        <Text style={styles.trackArtist} numberOfLines={1}>
+          {getArtist(track)}
+        </Text>
       </View>
 
       <View style={styles.progressSection}>
@@ -197,7 +204,7 @@ export default function NowPlaying({navigation, route}) {
           }}
           onSlidingComplete={handleSeekComplete}
           minimumTrackTintColor={Colors.primary}
-          maximumTrackTintColor={Colors.accent}
+          maximumTrackTintColor={Colors.border}
           thumbTintColor={Colors.primary}
         />
         <View style={styles.timeRow}>
@@ -207,40 +214,40 @@ export default function NowPlaying({navigation, route}) {
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert(
-              'Mode Aléatoire',
-              'Lecture aléatoire activée/désactivée',
-            )
-          }>
-          <Ionicons name="shuffle" size={26} color={Colors.primary} />
+        <TouchableOpacity onPress={toggleShuffle}>
+          <Ionicons
+            name="shuffle"
+            size={28}
+            color={isShuffle ? Colors.primary : Colors.muted}
+          />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.smallBtn} onPress={handleSkipPrevious}>
-          <Ionicons name="play-skip-back" size={24} color={Colors.text} />
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkipPrevious}>
+          <Ionicons name="play-skip-back" size={32} color={Colors.text} />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.bigBtn}
+          style={styles.playBtn}
           onPress={() => togglePlayback(playbackState)}>
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
-            size={40}
+            size={36}
             color={Colors.background}
             style={{marginLeft: isPlaying ? 0 : 4}}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.smallBtn} onPress={handleSkipNext}>
-          <Ionicons name="play-skip-forward" size={24} color={Colors.text} />
+        <TouchableOpacity style={styles.skipBtn} onPress={handleSkipNext}>
+          <Ionicons name="play-skip-forward" size={32} color={Colors.text} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert('Répéter', 'Mode répétition activé/désactivé')
-          }>
-          <Ionicons name="repeat" size={26} color={Colors.primary} />
+        <TouchableOpacity onPress={cycleRepeatMode}>
+          <View style={{position: 'relative'}}>
+            <Ionicons name={getRepeatIcon()} size={28} color={getRepeatColor()} />
+            {repeatMode === RepeatMode.Track && (
+              <Text style={styles.repeatOneText}>1</Text>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -251,8 +258,14 @@ export default function NowPlaying({navigation, route}) {
             style={styles.actionBtn}
             onPress={action.onPress}
             activeOpacity={0.8}>
-            <Ionicons name={action.icon} size={20} color={Colors.primary} />
-            <Text style={styles.actionLabel}>{action.label}</Text>
+            <Ionicons
+              name={action.icon}
+              size={24}
+              color={action.active ? Colors.primary : Colors.text}
+            />
+            <Text style={[styles.actionLabel, action.active && {color: Colors.primary}]}>
+              {action.label}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -261,125 +274,129 @@ export default function NowPlaying({navigation, route}) {
 }
 
 const styles = StyleSheet.create({
+  main: {
+    backgroundColor: Colors.background,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 48,
-    paddingBottom: 8,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   headerIcon: {width: 40, alignItems: 'center'},
   artContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  artWrapper: {
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    backgroundColor: Colors.surface,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 15},
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 8,
+    borderColor: Colors.surfaceLight,
   },
   art: {
-    width: 320,
-    height: 320,
-    borderRadius: 24,
+    width: '100%',
+    height: '100%',
   },
   trackInfo: {
-    paddingHorizontal: 24,
-    marginTop: 20,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    marginBottom: 30,
   },
   trackTitle: {
     color: Colors.text,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '800',
     textAlign: 'center',
-  },
-  artistRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 6,
+    marginBottom: 8,
   },
   trackArtist: {
     color: Colors.primary,
     fontSize: 18,
     fontWeight: '600',
-    maxWidth: '85%',
-  },
-  trackAlbum: {
-    color: Colors.accent,
-    fontSize: 14,
-    fontWeight: '500',
     textAlign: 'center',
-    marginTop: 4,
   },
   progressSection: {
-    paddingHorizontal: 24,
-    marginTop: 16,
+    paddingHorizontal: 30,
+    marginBottom: 30,
   },
   slider: {
     width: '100%',
     height: 40,
-    marginVertical: -8,
   },
   timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 2,
+    paddingHorizontal: 5,
   },
   timeText: {
     color: Colors.muted,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 30,
+    marginBottom: 40,
   },
-  smallBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bigBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+  playBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: Colors.primary,
-    shadowOffset: {width: 0, height: 4},
+    shadowOffset: {width: 0, height: 10},
     shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowRadius: 15,
+    elevation: 10,
+  },
+  skipBtn: {
+    padding: 10,
+  },
+  repeatOneText: {
+    position: 'absolute',
+    top: 8,
+    left: 10,
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: Colors.primary,
   },
   bottomActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginTop: 28,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
   },
   actionBtn: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
     alignItems: 'center',
-    minWidth: 72,
   },
   actionLabel: {
-    color: Colors.primary,
-    fontSize: 11,
+    color: Colors.muted,
+    fontSize: 10,
     fontWeight: '600',
-    marginTop: 4,
+    marginTop: 6,
   },
 });
