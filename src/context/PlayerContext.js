@@ -99,7 +99,8 @@ export function PlayerProvider({children}) {
 
       // Enregistrer dans l'historique si un utilisateur est connecté
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user;
         if (user && event.track.id) {
           await supabase.from('play_history').insert([
             { user_id: user.id, track_id: event.track.id }

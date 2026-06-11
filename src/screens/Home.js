@@ -46,7 +46,7 @@ export default function Home({navigation}) {
     navigation.navigate('NowPlaying', {track});
   };
 
-  const renderRecentCard = (item, index, queue) => {
+  const RecentCard = ({item, index, queue}) => {
     const anim = useRef(new Animated.Value(0)).current;
     useEffect(() => {
       Animated.spring(anim, {
@@ -56,11 +56,10 @@ export default function Home({navigation}) {
         delay: index * 100,
         useNativeDriver: true,
       }).start();
-    }, []);
+    }, [index]);
 
     return (
       <Animated.View
-        key={item.id || index}
         style={[
           styles.recentCard,
           {
@@ -80,13 +79,13 @@ export default function Home({navigation}) {
           activeOpacity={0.8}
           onPress={() => handlePlay(item, queue)}>
           <Image
-        source={
-          item.cover
-            ? {uri: item.cover}
-            : item.cover_url
-            ? {uri: item.cover_url}
-            : require('../../logo.png')
-        }
+            source={
+              item.cover
+                ? {uri: item.cover}
+                : item.cover_url
+                ? {uri: item.cover_url}
+                : require('../../logo.png')
+            }
             style={styles.recentImage}
           />
           <Text style={styles.recentTitle} numberOfLines={2}>
@@ -97,7 +96,7 @@ export default function Home({navigation}) {
     );
   };
 
-  const renderTrackCard = (p, index, queue) => {
+  const TrackCard = ({p, index, queue}) => {
     const anim = useRef(new Animated.Value(0)).current;
     useEffect(() => {
       Animated.timing(anim, {
@@ -106,11 +105,10 @@ export default function Home({navigation}) {
         delay: index * 50,
         useNativeDriver: true,
       }).start();
-    }, []);
+    }, [index]);
 
     return (
       <Animated.View
-        key={p.id || index}
         style={[
           styles.card,
           {
@@ -129,38 +127,38 @@ export default function Home({navigation}) {
           activeOpacity={0.9}
           onPress={() => handlePlay(p, queue)}>
           <View>
-        <Image
-          source={
-            p.cover
-              ? {uri: p.cover}
-              : p.cover_url
-              ? {uri: p.cover_url}
-              : require('../../logo.png')
-          }
-          style={styles.cardImage}
-        />
-        <View
-          style={[
-            styles.sourceBadge,
-            p.source === 'itunes' && styles.itunesBadge,
-            p.source === 'jamendo' && styles.jamendoBadge,
-          ]}>
-          <Text style={styles.sourceBadgeText}>
-            {p.source === 'itunes'
-              ? 'iTunes'
-              : p.source === 'deezer'
-              ? 'Deezer'
-              : p.source === 'jamendo'
-              ? 'Jamendo'
-              : p.source === 'audius'
-              ? 'Audius'
-              : 'Local'}
+            <Image
+              source={
+                p.cover
+                  ? {uri: p.cover}
+                  : p.cover_url
+                  ? {uri: p.cover_url}
+                  : require('../../logo.png')
+              }
+              style={styles.cardImage}
+            />
+            <View
+              style={[
+                styles.sourceBadge,
+                p.source === 'itunes' && styles.itunesBadge,
+                p.source === 'jamendo' && styles.jamendoBadge,
+              ]}>
+              <Text style={styles.sourceBadgeText}>
+                {p.source === 'itunes'
+                  ? 'iTunes'
+                  : p.source === 'deezer'
+                  ? 'Deezer'
+                  : p.source === 'jamendo'
+                  ? 'Jamendo'
+                  : p.source === 'audius'
+                  ? 'Audius'
+                  : 'Local'}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.cardTitle} numberOfLines={1}>
+            {p.title}
           </Text>
-        </View>
-      </View>
-      <Text style={styles.cardTitle} numberOfLines={1}>
-        {p.title}
-      </Text>
           <Text style={styles.cardArtist} numberOfLines={1}>
             {p.artist || p.artist_name || 'Artiste inconnu'}
           </Text>
@@ -210,14 +208,14 @@ export default function Home({navigation}) {
         ) : (
           <>
             <View style={styles.recentGrid}>
-              {sections.recentTracks
+              {Array.isArray(sections.recentTracks) && sections.recentTracks
                 .slice(0, 6)
-                .map((item, i) =>
-                  renderRecentCard(item, i, sections.recentTracks),
-                )}
+                .map((item, i) => (
+                  <RecentCard key={item.id || i} item={item} index={i} queue={sections.recentTracks} />
+                ))}
             </View>
 
-            {sections.customSongs.length > 0 && (
+            {Array.isArray(sections.customSongs) && sections.customSongs.length > 0 && (
               <>
                 <Text style={[styles.sectionTitle, {marginTop: 28}]}>
                   Vos titres (Supabase)
@@ -226,9 +224,9 @@ export default function Home({navigation}) {
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-                  {sections.customSongs.map((p, i) =>
-                    renderTrackCard(p, i, sections.customSongs),
-                  )}
+                  {sections.customSongs.map((p, i) => (
+                    <TrackCard key={p.id || i} p={p} index={i} queue={sections.customSongs} />
+                  ))}
                 </ScrollView>
               </>
             )}
@@ -238,9 +236,9 @@ export default function Home({navigation}) {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-              {sections.afrobeats.map((p, i) =>
-                renderTrackCard(p, i, sections.afrobeats),
-              )}
+              {Array.isArray(sections.afrobeats) && sections.afrobeats.map((p, i) => (
+                <TrackCard key={p.id || i} p={p} index={i} queue={sections.afrobeats} />
+              ))}
             </ScrollView>
 
             <Text style={[styles.sectionTitle, {marginTop: 28}]}>
@@ -250,9 +248,9 @@ export default function Home({navigation}) {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-              {sections.topGlobal.map((p, i) =>
-                renderTrackCard(p, i, sections.topGlobal),
-              )}
+              {Array.isArray(sections.topGlobal) && sections.topGlobal.map((p, i) => (
+                <TrackCard key={p.id || i} p={p} index={i} queue={sections.topGlobal} />
+              ))}
             </ScrollView>
 
             <View style={styles.bannerContainer}>
@@ -281,9 +279,9 @@ export default function Home({navigation}) {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-              {sections.audiusTrending.map((p, i) =>
-                renderTrackCard(p, i, sections.audiusTrending),
-              )}
+              {Array.isArray(sections.audiusTrending) && sections.audiusTrending.map((p, i) => (
+                <TrackCard key={p.id || i} p={p} index={i} queue={sections.audiusTrending} />
+              ))}
             </ScrollView>
           </>
         )}

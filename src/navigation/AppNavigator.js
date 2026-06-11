@@ -100,9 +100,11 @@ export default function AppNavigator() {
             <Stack.Screen name="Login" component={Login} />
             <Stack.Screen name="Register" component={Register} />
           </>
-        ) : null}
-
-        <Stack.Screen name="Home" component={MainTabs} />
+        ) : (
+          <>
+            <Stack.Screen name="Home" component={MainTabs} />
+          </>
+        )}
         <Stack.Screen name="Loading" component={Loading} />
         <Stack.Screen name="GroupPlaylist" component={GroupPlaylist} />
         <Stack.Screen name="MusicPage" component={MusicPage} />
