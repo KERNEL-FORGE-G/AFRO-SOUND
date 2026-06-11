@@ -41,7 +41,13 @@ export default function Register({navigation}) {
         'Succès',
         'Vérifiez votre boîte mail pour confirmer votre compte !',
       );
-      navigation.replace('Home');
+      // In a real app, we might wait for confirmation.
+      // For now, if the user object is returned, we consider it a success.
+      if (data.user) {
+        navigation.navigate('Login');
+      } else {
+        navigation.navigate('Home');
+      }
     }
     setLoading(false);
   };
