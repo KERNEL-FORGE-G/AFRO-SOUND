@@ -8,12 +8,18 @@ module.exports = `<!DOCTYPE html>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0b1020; color: #e9edf2; }
+        body { font-family: 'Inter', sans-serif; background-color: #0b1020; color: #e9edf2; overflow-x: hidden; }
         .primary-orange { color: #F97316; }
         .bg-primary-orange { background-color: #F97316; }
         .border-primary-orange { border-color: #F97316; }
+        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; border-color: #F97316; }
+        .nav-link { transition: all 0.2s ease; }
+        .nav-link:hover { color: #F97316; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
     </style>
 </head>
 <body>
@@ -35,6 +41,124 @@ module.exports = `<!DOCTYPE html>
             );
         };
 
+        const StatsView = ({ stats }) => {
+            const chartRefs = {
+                sources: React.useRef(null),
+                visibility: React.useRef(null),
+                top: React.useRef(null)
+            };
+
+            useEffect(() => {
+                if (!stats) return;
+                const charts = [];
+
+                // Sources Chart
+                const sourceCtx = chartRefs.sources.current.getContext('2d');
+                charts.push(new Chart(sourceCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(stats.trackSources),
+                        datasets: [{
+                            data: Object.values(stats.trackSources),
+                            backgroundColor: ['#F97316', '#3b82f6', '#10b981', '#f59e0b', '#6366f1'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } } }
+                });
+
+                // Visibility Chart
+                const visCtx = chartRefs.visibility.current.getContext('2d');
+                charts.push(new Chart(visCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(stats.playlistVisibility),
+                        datasets: [{
+                            data: Object.values(stats.playlistVisibility),
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af' } } } }
+                });
+
+                // Top Tracks
+                const topCtx = chartRefs.top.current.getContext('2d');
+                charts.push(new Chart(topCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: stats.topTracks.map(t => t.title.substring(0, 15) + '...'),
+                        datasets: [{
+                            label: 'Écoutes',
+                            data: stats.topTracks.map(t => t.count),
+                            backgroundColor: '#F97316',
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        scales: {
+                            x: { grid: { color: '#262b33' }, ticks: { color: '#9ca3af' } },
+                            y: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                }));
+
+                return () => {
+                    charts.forEach(c => c.destroy());
+                };
+            }, [stats]);
+
+            if (!stats) return <div className="text-center py-20 text-gray-500 animate__animated animate__fadeIn">Chargement des statistiques...</div>;
+
+            return (
+                <div className="animate__animated animate__fadeIn">
+                    <h2 className="text-2xl font-bold mb-8">Tableau de Bord Analytique</h2>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                        <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg card-hover">
+                            <div className="text-gray-400 text-sm uppercase font-semibold">Total Utilisateurs</div>
+                            <div className="text-4xl font-bold mt-2 primary-orange">{stats.counts.profiles}</div>
+                            <div className="text-xs text-gray-500 mt-1">Utilisateurs inscrits</div>
+                        </div>
+                        <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg card-hover">
+                            <div className="text-gray-400 text-sm uppercase font-semibold">Bibliothèque</div>
+                            <div className="text-4xl font-bold mt-2 text-blue-500">{stats.counts.tracks}</div>
+                            <div className="text-xs text-gray-500 mt-1">Titres importés</div>
+                        </div>
+                        <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg card-hover">
+                            <div className="text-gray-400 text-sm uppercase font-semibold">Playlists</div>
+                            <div className="text-4xl font-bold mt-2 text-green-500">{stats.counts.playlists}</div>
+                            <div className="text-xs text-gray-500 mt-1">Playlists créées</div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                        <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg">
+                            <h3 className="text-lg font-semibold mb-6">Sources des Titres</h3>
+                            <div className="chart-container">
+                                <canvas ref={chartRefs.sources}></canvas>
+                            </div>
+                        </div>
+                        <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg">
+                            <h3 className="text-lg font-semibold mb-6">Visibilité des Playlists</h3>
+                            <div className="chart-container">
+                                <canvas ref={chartRefs.visibility}></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-[#16191f] border border-[#262b33] p-6 rounded-2xl shadow-lg mb-10">
+                        <h3 className="text-lg font-semibold mb-6">Top 5 - Titres les plus écoutés</h3>
+                        <div className="chart-container" style={{ height: '250px' }}>
+                            <canvas ref={chartRefs.top}></canvas>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
         const App = () => {
             const [status, setStatus] = useState(null);
             const [pingResult, setPingResult] = useState(null);
@@ -43,6 +167,7 @@ module.exports = `<!DOCTYPE html>
             const [library, setLibrary] = useState([]);
             const [profiles, setProfiles] = useState([]);
             const [playlists, setPlaylists] = useState([]);
+            const [stats, setStats] = useState(null);
             const [view, setView] = useState('status');
             const [adminKey, setAdminKey] = useState(localStorage.getItem('afrosound_admin_key') || '');
             const [isAuth, setIsAuth] = useState(false);
@@ -158,6 +283,15 @@ module.exports = `<!DOCTYPE html>
                 } catch (e) { alert(e.message); }
             };
 
+            const loadStats = async () => {
+                try {
+                    setView('stats');
+                    const res = await adminFetch('/api/admin/stats');
+                    const data = await res.json();
+                    if (data.success) setStats(data.data);
+                } catch (e) { alert(e.message); }
+            };
+
             const deleteTrack = async (id) => {
                 if (!confirm('Supprimer ce titre ?')) return;
                 try {
@@ -214,15 +348,18 @@ module.exports = `<!DOCTYPE html>
                     </header>
 
                     <nav className="bg-[#16191f] border-b border-[#262b33] px-6 py-2 flex gap-4">
-                        <button onClick={() => setView('status')} className={"px-3 py-1 rounded-md text-sm " + (view === 'status' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Dashboard</button>
-                        <button onClick={loadLibrary} className={"px-3 py-1 rounded-md text-sm " + (view === 'library' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Bibliothèque</button>
-                        <button onClick={loadProfiles} className={"px-3 py-1 rounded-md text-sm " + (view === 'profiles' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Utilisateurs</button>
-                        <button onClick={loadPlaylists} className={"px-3 py-1 rounded-md text-sm " + (view === 'playlists' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Playlists</button>
+                        <button onClick={() => setView('status')} className={"nav-link px-3 py-1 rounded-md text-sm " + (view === 'status' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Dashboard</button>
+                        <button onClick={loadStats} className={"nav-link px-3 py-1 rounded-md text-sm " + (view === 'stats' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Statistiques</button>
+                        <button onClick={loadLibrary} className={"nav-link px-3 py-1 rounded-md text-sm " + (view === 'library' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Bibliothèque</button>
+                        <button onClick={loadProfiles} className={"nav-link px-3 py-1 rounded-md text-sm " + (view === 'profiles' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Utilisateurs</button>
+                        <button onClick={loadPlaylists} className={"nav-link px-3 py-1 rounded-md text-sm " + (view === 'playlists' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Playlists</button>
                     </nav>
 
                     <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+                        {view === 'stats' && <StatsView stats={stats} />}
+
                         {view === 'status' && (
-                            <div>
+                            <div className="animate__animated animate__fadeIn">
                                 <h2 className="text-gray-500 text-xs uppercase font-bold tracking-widest mb-4">État du système</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                                     <StatusCard label="Backend" value={status ? "En ligne" : "Chargement..."} state={status ? "ok" : "warn"} />

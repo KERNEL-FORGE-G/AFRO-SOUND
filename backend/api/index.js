@@ -247,6 +247,71 @@ app.get('/api/admin/profiles', auth, async (req, res) => {
   }
 });
 
+app.get('/api/admin/stats', auth, async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase indisponible' });
+  try {
+    // 1. Comptages globaux (Optimisé: head: true)
+    const { count: profileCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+    const { count: trackCount } = await supabase.from('tracks').select('*', { count: 'exact', head: true });
+    const { count: playlistCount } = await supabase.from('playlists').select('*', { count: 'exact', head: true });
+
+    // 2. Répartition par source (Aggégration SQL simulée via select partiel)
+    const { data: trackSources } = await supabase.from('tracks').select('source');
+    const sourceCounts = (trackSources || []).reduce((acc, t) => {
+      const s = t.source || 'inconnue';
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    }, {});
+
+    // 3. Répartition playlists (Optimisé)
+    const { data: playlistVisibility } = await supabase.from('playlists').select('is_public');
+    const visibilityCounts = (playlistVisibility || []).reduce((acc, p) => {
+      const key = p.is_public ? 'publique' : 'privée';
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, { publique: 0, privée: 0 });
+
+    // 4. Top 5 des morceaux les plus écoutés
+    const { data: playHistory } = await supabase
+      .from('play_history')
+      .select('track_id, tracks(title, artist)')
+      .limit(2000);
+
+    const trackPlays = (playHistory || []).reduce((acc, ph) => {
+      if (!ph.track_id) return acc;
+      if (!acc[ph.track_id]) {
+        acc[ph.track_id] = {
+          count: 0,
+          title: ph.tracks?.title || 'Titre inconnu',
+          artist: ph.tracks?.artist || 'Artiste inconnu'
+        };
+      }
+      acc[ph.track_id].count++;
+      return acc;
+    }, {});
+
+    const topTracks = Object.values(trackPlays)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    res.json({
+      success: true,
+      data: {
+        counts: {
+          profiles: profileCount || 0,
+          tracks: trackCount || 0,
+          playlists: playlistCount || 0
+        },
+        trackSources: sourceCounts,
+        playlistVisibility: visibilityCounts,
+        topTracks
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
