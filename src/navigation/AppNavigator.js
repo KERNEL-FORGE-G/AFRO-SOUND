@@ -19,6 +19,7 @@ import SearchResults from '../screens/SearchResults';
 import CreatePlaylist from '../screens/CreatePlaylist';
 import Login from '../screens/Login';
 import GroupPlaylist from '../screens/GroupPlaylist';
+import Profile from '../screens/Profile';
 import {Colors} from '../theme';
 import useAuth from '../hooks/useAuth';
 
@@ -74,7 +75,24 @@ export default function AppNavigator() {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{headerShown: false}}>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+          cardStyleInterpolator: ({current, layouts}) => {
+            return {
+              cardStyle: {
+                transform: [
+                  {
+                    translateX: current.progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [layouts.screen.width, 0],
+                    }),
+                  },
+                ],
+              },
+            };
+          },
+        }}>
         {!user ? (
           <>
             <Stack.Screen name="GetStarted" component={GetStarted} />
@@ -91,6 +109,7 @@ export default function AppNavigator() {
         <Stack.Screen name="NowPlaying" component={NowPlaying} />
         <Stack.Screen name="Lyrics" component={Lyrics} />
         <Stack.Screen name="SearchResults" component={SearchResults} />
+        <Stack.Screen name="Profile" component={Profile} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -26,6 +26,52 @@ export const searchJamendo = async (query, limit = 10) => {
   }
 };
 
+/**
+ * Enregistre un titre dans la base de données via le backend
+ */
+export const upsertTrack = async track => {
+  try {
+    const baseUrl = getBaseUrl();
+    const res = await fetch(`${baseUrl}/api/tracks/upsert`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        id: track.id,
+        title: track.title,
+        artist: track.artist,
+        cover_url: track.cover,
+        audio_url: track.audioUrl,
+        source: track.source,
+        duration: track.duration,
+      }),
+    });
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    console.warn('[upsertTrack] Erreur:', e.message);
+    return {success: false, error: e.message};
+  }
+};
+
+/**
+ * Ajoute un titre à une playlist via Supabase Client
+ */
+export const addTrackToPlaylist = async (playlistId, trackId) => {
+  try {
+    const {supabase} = require('../supabaseClient');
+    const {error} = await supabase
+      .from('playlist_tracks')
+      .upsert([{playlist_id: playlistId, track_id: trackId}], {
+        onConflict: 'playlist_id,track_id',
+      });
+    if (error) throw error;
+    return {success: true};
+  } catch (e) {
+    console.warn('[addTrackToPlaylist] Erreur:', e.message);
+    return {success: false, error: e.message};
+  }
+};
+
 /** Recherche Audius (titres complets en streaming) via le backend */
 export const searchAudius = async (query, limit = 10) => {
   try {

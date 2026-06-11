@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -45,13 +46,40 @@ export default function Home({navigation}) {
     navigation.navigate('NowPlaying', {track});
   };
 
-  const renderRecentCard = (item, index, queue) => (
-    <TouchableOpacity
-      key={item.id || index}
-      style={styles.recentCard}
-      activeOpacity={0.8}
-      onPress={() => handlePlay(item, queue)}>
-      <Image
+  const renderRecentCard = (item, index, queue) => {
+    const anim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+      Animated.spring(anim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        delay: index * 100,
+        useNativeDriver: true,
+      }).start();
+    }, []);
+
+    return (
+      <Animated.View
+        key={item.id || index}
+        style={[
+          styles.recentCard,
+          {
+            opacity: anim,
+            transform: [
+              {
+                scale: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.8, 1],
+                }),
+              },
+            ],
+          },
+        ]}>
+        <TouchableOpacity
+          style={{flexDirection: 'row', alignItems: 'center', flex: 1}}
+          activeOpacity={0.8}
+          onPress={() => handlePlay(item, queue)}>
+          <Image
         source={
           item.cover
             ? {uri: item.cover}
@@ -59,21 +87,48 @@ export default function Home({navigation}) {
             ? {uri: item.cover_url}
             : require('../../logo.png')
         }
-        style={styles.recentImage}
-      />
-      <Text style={styles.recentTitle} numberOfLines={2}>
-        {item.title}
-      </Text>
-    </TouchableOpacity>
-  );
+            style={styles.recentImage}
+          />
+          <Text style={styles.recentTitle} numberOfLines={2}>
+            {item.title}
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
-  const renderTrackCard = (p, index, queue) => (
-    <TouchableOpacity
-      key={p.id || index}
-      style={styles.card}
-      activeOpacity={0.9}
-      onPress={() => handlePlay(p, queue)}>
-      <View>
+  const renderTrackCard = (p, index, queue) => {
+    const anim = useRef(new Animated.Value(0)).current;
+    useEffect(() => {
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 500,
+        delay: index * 50,
+        useNativeDriver: true,
+      }).start();
+    }, []);
+
+    return (
+      <Animated.View
+        key={p.id || index}
+        style={[
+          styles.card,
+          {
+            opacity: anim,
+            transform: [
+              {
+                translateX: anim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [20, 0],
+                }),
+              },
+            ],
+          },
+        ]}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => handlePlay(p, queue)}>
+          <View>
         <Image
           source={
             p.cover
@@ -106,11 +161,13 @@ export default function Home({navigation}) {
       <Text style={styles.cardTitle} numberOfLines={1}>
         {p.title}
       </Text>
-      <Text style={styles.cardArtist} numberOfLines={1}>
-        {p.artist || p.artist_name || 'Artiste inconnu'}
-      </Text>
-    </TouchableOpacity>
-  );
+          <Text style={styles.cardArtist} numberOfLines={1}>
+            {p.artist || p.artist_name || 'Artiste inconnu'}
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={[theme.container, styles.mainContainer]}>
@@ -120,7 +177,7 @@ export default function Home({navigation}) {
           <View style={styles.headerTop}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
               <TouchableOpacity
-                onPress={() => navigation.navigate('Bibliothèque')}
+                onPress={() => navigation.navigate('Profile')}
                 activeOpacity={0.8}>
                 <View style={styles.profilePic} />
               </TouchableOpacity>

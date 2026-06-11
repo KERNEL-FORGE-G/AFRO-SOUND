@@ -1,14 +1,26 @@
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 
-// Placeholder async thunks for social login flows. Actual implementation
-// should use OAuth libraries (expo-auth-session / react-native-app-auth)
-// or Supabase OAuth helpers.
+import AuthService from '../../services/authService';
+
+/**
+ * Social Login Thunk using Supabase OAuth
+ */
 export const socialLogin = createAsyncThunk(
   'auth/socialLogin',
-  async (provider, thunkAPI) => {
-    // provider: 'google' | 'github' | 'spotify'
-    // Implement OAuth flow in the app and return user object + token
-    return {user: null, token: null, provider};
+  async (provider, {rejectWithValue}) => {
+    try {
+      const result = await AuthService.supabaseOAuth(provider);
+      if (!result.success) {
+        return rejectWithValue(result.error);
+      }
+      return {
+        user: result.user,
+        token: result.session?.access_token,
+        provider: result.provider,
+      };
+    } catch (e) {
+      return rejectWithValue(e.message);
+    }
   },
 );
 

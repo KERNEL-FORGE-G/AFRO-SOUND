@@ -121,3 +121,18 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Historique des recherches
+create table if not exists public.search_history (
+  id bigint generated always as identity primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  query text not null,
+  searched_at timestamptz default now()
+);
+
+alter table public.search_history enable row level security;
+
+-- recherche : chacun les siennes
+drop policy if exists "search_history_own" on public.search_history;
+create policy "search_history_own" on public.search_history
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

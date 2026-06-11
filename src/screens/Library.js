@@ -60,7 +60,7 @@ export default function Library({navigation, route}) {
       <View style={styles.header}>
         <View style={{flexDirection: 'row', alignItems: 'center'}}>
           <TouchableOpacity
-            onPress={() => setShowMenu(!showMenu)}
+            onPress={() => navigation.navigate('Profile')}
             activeOpacity={0.8}>
             <View style={styles.profilePic} />
           </TouchableOpacity>

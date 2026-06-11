@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,47 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  Animated,
 } from 'react-native';
 import theme, {Colors} from '../theme';
 import AppButton from '../components/AppButton';
 import {supabase} from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
+import {searchAll, upsertTrack, addTrackToPlaylist} from '../services/musicApi';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function CreatePlaylist({navigation}) {
   const {user} = useAuth();
   const [playlistName, setPlaylistName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [selectedTracks, setSelectedTracks] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    setIsSearching(true);
+    try {
+      const data = await searchAll(searchQuery, 10);
+      setSearchResults(data);
+    } catch (e) {
+      console.warn(e);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const toggleTrack = track => {
+    if (selectedTracks.find(t => t.id === track.id)) {
+      setSelectedTracks(selectedTracks.filter(t => t.id !== track.id));
+    } else {
+      setSelectedTracks([...selectedTracks, track]);
+    }
+  };
 
   const handleCreate = async () => {
     if (playlistName.trim().length === 0) {
@@ -31,22 +62,31 @@ export default function CreatePlaylist({navigation}) {
 
     setLoading(true);
     try {
-      const {error} = await supabase.from('playlists').insert([
-        {
-          name: playlistName.trim(),
-          user_id: user.id,
-          is_public: false,
-        },
-      ]);
+      // 1. Création de la playlist
+      const {data: playlistData, error: playlistError} = await supabase
+        .from('playlists')
+        .insert([
+          {
+            name: playlistName.trim(),
+            user_id: user.id,
+            is_public: true,
+          },
+        ])
+        .select();
 
-      if (error) {
-        throw error;
+      if (playlistError) throw playlistError;
+      const newPlaylist = playlistData[0];
+
+      // 2. Upsert des tracks et ajout à la playlist
+      for (const track of selectedTracks) {
+        await upsertTrack(track);
+        await addTrackToPlaylist(newPlaylist.id, track.id);
       }
 
-      Alert.alert('Succès', 'Votre playlist a été créée !');
-      // Redirige l'utilisateur vers sa bibliothèque avec un paramètre pour rafraîchir
+      Alert.alert('Succès', `La playlist "${newPlaylist.name}" a été créée avec ${selectedTracks.length} titres !`);
       navigation.navigate('Bibliothèque', {refresh: Date.now()});
       setPlaylistName('');
+      setSelectedTracks([]);
     } catch (error) {
       Alert.alert('Erreur', error.message);
     } finally {
@@ -54,28 +94,101 @@ export default function CreatePlaylist({navigation}) {
     }
   };
 
+  const renderTrackItem = ({item, index}) => {
+    const isSelected = selectedTracks.find(t => t.id === item.id);
+    const anim = useRef(new Animated.Value(0)).current;
+
+    React.useEffect(() => {
+      Animated.spring(anim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        delay: index * 50,
+        useNativeDriver: true,
+      }).start();
+    }, []);
+
+    return (
+      <Animated.View style={{opacity: anim, transform: [{scale: anim}]}}>
+        <TouchableOpacity
+          style={[styles.trackCard, isSelected && styles.trackCardSelected]}
+          onPress={() => toggleTrack(item)}>
+          <Image
+            source={item.cover ? {uri: item.cover} : require('../../logo.png')}
+            style={styles.trackImage}
+          />
+          <View style={styles.trackInfo}>
+            <Text style={styles.trackTitle} numberOfLines={1}>{item.title}</Text>
+            <Text style={styles.trackArtist} numberOfLines={1}>{item.artist}</Text>
+          </View>
+          <Ionicons
+            name={isSelected ? "checkmark-circle" : "add-circle-outline"}
+            size={24}
+            color={isSelected ? Colors.primary : Colors.muted}
+          />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Nouvelle Playlist AFRO SOUND</Text>
-      <Text style={styles.subtitle}>
-        Partagez vos sons préférés avec le monde.
-      </Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={24} color={Colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Nouvelle Playlist</Text>
+      </View>
 
       <TextInput
         style={styles.input}
-        placeholder="Ex: Ma super playlist..."
+        placeholder="Nom de la playlist..."
         placeholderTextColor={Colors.muted}
         value={playlistName}
         onChangeText={setPlaylistName}
-        returnKeyType="done"
-        onSubmitEditing={handleCreate}
       />
 
-      {loading ? (
-        <ActivityIndicator size="large" color={Colors.primary} />
+      <View style={styles.searchSection}>
+        <Text style={styles.sectionLabel}>Ajouter des titres ({selectedTracks.length} sélectionnés)</Text>
+        <View style={styles.searchBar}>
+            <TextInput
+                style={styles.searchInput}
+                placeholder="Rechercher des sons..."
+                placeholderTextColor={Colors.muted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                onSubmitEditing={handleSearch}
+            />
+            <TouchableOpacity onPress={handleSearch} style={styles.searchBtn}>
+                <Ionicons name="search" size={20} color={Colors.text} />
+            </TouchableOpacity>
+        </View>
+      </View>
+
+      {isSearching ? (
+        <ActivityIndicator color={Colors.primary} style={{marginVertical: 20}} />
       ) : (
-        <AppButton title="Créer" onPress={handleCreate} style={styles.button} />
+        <FlatList
+            data={searchResults}
+            renderItem={renderTrackItem}
+            keyExtractor={item => item.id}
+            style={styles.list}
+            contentContainerStyle={{paddingBottom: 20}}
+            ListEmptyComponent={searchQuery ? <Text style={styles.emptyText}>Aucun résultat</Text> : null}
+        />
       )}
+
+      <View style={styles.footer}>
+        {loading ? (
+            <ActivityIndicator size="large" color={Colors.primary} />
+        ) : (
+            <AppButton
+                title={selectedTracks.length > 0 ? `Créer avec ${selectedTracks.length} titres` : "Créer vide"}
+                onPress={handleCreate}
+                disabled={!playlistName.trim()}
+            />
+        )}
+      </View>
     </View>
   );
 }
@@ -84,39 +197,81 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingTop: 50,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  backBtn: {marginRight: 15},
   title: {
     color: Colors.text,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  subtitle: {
-    color: Colors.muted,
-    fontSize: 16,
-    marginBottom: 32,
-    textAlign: 'center',
   },
   input: {
-    width: '100%',
     backgroundColor: Colors.surface,
     color: Colors.text,
+    marginHorizontal: 20,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     fontSize: 16,
-    marginBottom: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  button: {
-    backgroundColor: Colors.accent,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 30,
-    width: '100%',
+  searchSection: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  sectionLabel: {
+    color: Colors.muted,
+    fontSize: 14,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    fontWeight: 'bold',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceLight,
+    borderRadius: 10,
     alignItems: 'center',
+    paddingRight: 10,
   },
-  buttonText: {color: Colors.background, fontSize: 18, fontWeight: 'bold'},
+  searchInput: {
+    flex: 1,
+    color: Colors.text,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  searchBtn: {padding: 5},
+  list: {flex: 1, paddingHorizontal: 20},
+  trackCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    padding: 10,
+    borderRadius: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  trackCardSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+  },
+  trackImage: {width: 44, height: 44, borderRadius: 6, marginRight: 12},
+  trackInfo: {flex: 1},
+  trackTitle: {color: Colors.text, fontSize: 14, fontWeight: '600'},
+  trackArtist: {color: Colors.muted, fontSize: 12},
+  emptyText: {color: Colors.muted, textAlign: 'center', marginTop: 20},
+  footer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.background,
+  }
 });

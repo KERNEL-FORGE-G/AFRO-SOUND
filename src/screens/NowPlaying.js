@@ -41,6 +41,10 @@ export default function NowPlaying({navigation, route}) {
     skipToNext,
     skipToPrevious,
     seekTo,
+    repeatMode,
+    toggleRepeat,
+    isShuffle,
+    toggleShuffle,
   } = usePlayer();
   const playbackState = usePlaybackState();
   const {position, duration} = useProgress(500);
@@ -203,6 +207,14 @@ export default function NowPlaying({navigation, route}) {
         ),
     },
     {
+      icon: 'download-outline',
+      label: 'Télécharger',
+      onPress: () => {
+        const { downloadTrack } = usePlayer();
+        downloadTrack(track);
+      },
+    },
+    {
       icon: 'share-social-outline',
       label: 'Partager',
       onPress: () => Alert.alert('Partager', 'Partager ce titre'),
@@ -279,14 +291,12 @@ export default function NowPlaying({navigation, route}) {
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert(
-              'Mode Aléatoire',
-              'Lecture aléatoire activée/désactivée',
-            )
-          }>
-          <Ionicons name="shuffle" size={26} color={Colors.primary} />
+        <TouchableOpacity onPress={toggleShuffle}>
+          <Ionicons
+            name="shuffle"
+            size={26}
+            color={isShuffle ? Colors.primary : Colors.muted}
+          />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.smallBtn} onPress={handleSkipPrevious}>
@@ -308,11 +318,15 @@ export default function NowPlaying({navigation, route}) {
           <Ionicons name="play-skip-forward" size={24} color={Colors.text} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() =>
-            Alert.alert('Répéter', 'Mode répétition activé/désactivé')
-          }>
-          <Ionicons name="repeat" size={26} color={Colors.primary} />
+        <TouchableOpacity onPress={toggleRepeat}>
+          <Ionicons
+            name={repeatMode === 'track' ? "repeat-outline" : "repeat"}
+            size={26}
+            color={repeatMode === 'off' ? Colors.muted : Colors.primary}
+          />
+          {repeatMode === 'track' && (
+            <View style={styles.repeatBadge}><Text style={styles.repeatBadgeText}>1</Text></View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -453,5 +467,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     marginTop: 4,
+  },
+  repeatBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: Colors.primary,
+    borderRadius: 6,
+    width: 12,
+    height: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  repeatBadgeText: {
+    color: Colors.background,
+    fontSize: 8,
+    fontWeight: 'bold',
   },
 });
