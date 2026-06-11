@@ -7,8 +7,12 @@ import {
   Alert,
   Image,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {supabase} from '../supabaseClient';
+import useAuth from '../hooks/useAuth';
+import {Colors} from '../theme';
 
 const sampleCovers = [
   require('../../assets/1.jpg'),
@@ -18,24 +22,38 @@ const sampleCovers = [
 ];
 
 export default function Library({navigation, route}) {
+  const {user} = useAuth();
   const [showMenu, setShowMenu] = useState(false);
   const [myPlaylists, setMyPlaylists] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Écoute les paramètres de navigation pour ajouter une nouvelle playlist
   useEffect(() => {
-    if (route.params?.newPlaylist) {
-      const newPlaylistName = route.params.newPlaylist;
-      // Vérifie qu'on n'ajoute pas de doublon (par nom)
-      if (!myPlaylists.some(p => p.name === newPlaylistName)) {
-        const newPlaylist = {
-          name: newPlaylistName,
-          image: sampleCovers[myPlaylists.length % sampleCovers.length], // Assigne une image de couverture en boucle
-        };
-        setMyPlaylists(prev => [newPlaylist, ...prev]);
-      }
+    if (user) {
+      fetchPlaylists();
+    } else {
+      setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [route.params?.newPlaylist]);
+  }, [user, route.params?.refresh]);
+
+  const fetchPlaylists = async () => {
+    setLoading(true);
+    try {
+      const {data, error} = await supabase
+        .from('playlists')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', {ascending: false});
+
+      if (error) {
+        throw error;
+      }
+      setMyPlaylists(data || []);
+    } catch (error) {
+      console.error('Error fetching playlists:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -95,7 +113,24 @@ export default function Library({navigation, route}) {
       )}
 
       {/* Condition : Si la liste est vide, on affiche le texte, sinon on affiche les playlists */}
-      {myPlaylists.length === 0 ? (
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color={Colors.primary}
+          style={{marginTop: 40}}
+        />
+      ) : !user ? (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Text style={styles.emptyText}>
+            Connectez-vous pour voir votre bibliothèque.
+          </Text>
+          <TouchableOpacity
+            style={styles.loginBtn}
+            onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.loginBtnText}>Se connecter</Text>
+          </TouchableOpacity>
+        </View>
+      ) : myPlaylists.length === 0 ? (
         <Text style={styles.emptyText}>
           Votre bibliothèque est vide pour le moment.
         </Text>
@@ -105,7 +140,7 @@ export default function Library({navigation, route}) {
           showsVerticalScrollIndicator={false}>
           {myPlaylists.map((playlist, index) => (
             <TouchableOpacity
-              key={index}
+              key={playlist.id || index}
               style={styles.playlistCard}
               activeOpacity={0.8}
               onPress={() =>
@@ -113,14 +148,19 @@ export default function Library({navigation, route}) {
                   item: {
                     title: playlist.name,
                     artist: 'Playlist • Vous',
-                    image: playlist.image,
+                    image: sampleCovers[index % sampleCovers.length],
                   },
                 })
               }>
-              <Image source={playlist.image} style={styles.playlistCover} />
+              <Image
+                source={sampleCovers[index % sampleCovers.length]}
+                style={styles.playlistCover}
+              />
               <View style={styles.playlistInfo}>
                 <Text style={styles.playlistTitle}>{playlist.name}</Text>
-                <Text style={styles.playlistSubtitle}>Playlist • Vous</Text>
+                <Text style={styles.playlistSubtitle}>
+                  {playlist.is_public ? 'Playlist publique' : 'Playlist privée'}
+                </Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -178,9 +218,19 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     backgroundColor: '#2C241E',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    borderRadius: 8,
   },
   playlistSubtitle: {color: '#C4A484', fontSize: 14},
+  loginBtn: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    marginTop: 20,
+  },
+  loginBtnText: {
+    color: Colors.background,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });

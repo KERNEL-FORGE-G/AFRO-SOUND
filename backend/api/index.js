@@ -224,6 +224,54 @@ app.get('/api/songs', async (req, res) => {
   }
 });
 
+// --- ADMIN CRUD ROUTES ---
+
+// Gestion des TITRES
+app.post('/api/admin/tracks', async (req, res) => {
+  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
+  const {id, title, artist, cover_url, audio_url, source, duration} = req.body;
+  const {data, error} = await supabase
+    .from('tracks')
+    .upsert([{id, title, artist, cover_url, audio_url, source, duration}]);
+  if (error) return res.status(400).json({error: error.message});
+  res.json({success: true, data});
+});
+
+app.delete('/api/admin/tracks/:id', async (req, res) => {
+  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
+  const {error} = await supabase.from('tracks').delete().eq('id', req.params.id);
+  if (error) return res.status(400).json({error: error.message});
+  res.json({success: true});
+});
+
+// Gestion des PLAYLISTS
+app.get('/api/admin/playlists', async (req, res) => {
+  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
+  const {data, error} = await supabase
+    .from('playlists')
+    .select('*, profiles(username)');
+  if (error) return res.status(400).json({error: error.message});
+  res.json(data);
+});
+
+app.delete('/api/admin/playlists/:id', async (req, res) => {
+  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
+  const {error} = await supabase
+    .from('playlists')
+    .delete()
+    .eq('id', req.params.id);
+  if (error) return res.status(400).json({error: error.message});
+  res.json({success: true});
+});
+
+// Gestion des UTILISATEURS (via profiles)
+app.get('/api/admin/profiles', async (req, res) => {
+  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
+  const {data, error} = await supabase.from('profiles').select('*');
+  if (error) return res.status(400).json({error: error.message});
+  res.json(data);
+});
+
 // Exporter pour Vercel
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;

@@ -1,22 +1,57 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, TextInput, Alert} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import theme, {Colors} from '../theme';
 import AppButton from '../components/AppButton';
+import {supabase} from '../supabaseClient';
+import useAuth from '../hooks/useAuth';
 
 export default function CreatePlaylist({navigation}) {
+  const {user} = useAuth();
   const [playlistName, setPlaylistName] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (playlistName.trim().length === 0) {
       Alert.alert('Oups !', 'Veuillez entrer un nom pour votre playlist.');
       return;
     }
 
-    // Redirige l'utilisateur vers sa bibliothèque en envoyant le nom de la nouvelle playlist
-    navigation.navigate('Bibliothèque', {newPlaylist: playlistName});
+    if (!user) {
+      Alert.alert('Erreur', 'Vous devez être connecté pour créer une playlist.');
+      navigation.navigate('Login');
+      return;
+    }
 
-    // Réinitialise le champ de texte pour la prochaine fois
-    setPlaylistName('');
+    setLoading(true);
+    try {
+      const {error} = await supabase.from('playlists').insert([
+        {
+          name: playlistName.trim(),
+          user_id: user.id,
+          is_public: false,
+        },
+      ]);
+
+      if (error) {
+        throw error;
+      }
+
+      Alert.alert('Succès', 'Votre playlist a été créée !');
+      // Redirige l'utilisateur vers sa bibliothèque avec un paramètre pour rafraîchir
+      navigation.navigate('Bibliothèque', {refresh: Date.now()});
+      setPlaylistName('');
+    } catch (error) {
+      Alert.alert('Erreur', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,7 +71,11 @@ export default function CreatePlaylist({navigation}) {
         onSubmitEditing={handleCreate}
       />
 
-      <AppButton title="Créer" onPress={handleCreate} style={styles.button} />
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} />
+      ) : (
+        <AppButton title="Créer" onPress={handleCreate} style={styles.button} />
+      )}
     </View>
   );
 }
