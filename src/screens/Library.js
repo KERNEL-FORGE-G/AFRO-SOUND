@@ -6,9 +6,12 @@ import {
   TouchableOpacity,
   Alert,
   Image,
-  ScrollView,
+  FlatList,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {Colors} from '../theme';
+import TrackListItem from '../components/TrackListItem';
+import {usePlayer} from '../context/PlayerContext';
 
 const sampleCovers = [
   require('../../assets/1.jpg'),
@@ -20,16 +23,19 @@ const sampleCovers = [
 export default function Library({navigation, route}) {
   const [showMenu, setShowMenu] = useState(false);
   const [myPlaylists, setMyPlaylists] = useState([]);
+  const {currentTrack} = usePlayer();
 
   // Écoute les paramètres de navigation pour ajouter une nouvelle playlist
   useEffect(() => {
     if (route.params?.newPlaylist) {
       const newPlaylistName = route.params.newPlaylist;
-      // Vérifie qu'on n'ajoute pas de doublon (par nom)
       if (!myPlaylists.some(p => p.name === newPlaylistName)) {
         const newPlaylist = {
+          id: 'pl_' + Date.now(),
           name: newPlaylistName,
-          image: sampleCovers[myPlaylists.length % sampleCovers.length], // Assigne une image de couverture en boucle
+          title: newPlaylistName, // compatible with TrackListItem expectations
+          image: sampleCovers[myPlaylists.length % sampleCovers.length],
+          artist: 'Playlist • Vous',
         };
         setMyPlaylists(prev => [newPlaylist, ...prev]);
       }
@@ -37,30 +43,37 @@ export default function Library({navigation, route}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [route.params?.newPlaylist]);
 
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <View style={{flexDirection: 'row', alignItems: 'center'}}>
+        <TouchableOpacity
+          onPress={() => setShowMenu(!showMenu)}
+          activeOpacity={0.8}>
+          <View style={styles.profilePic}>
+            <Ionicons name="person" size={20} color={Colors.muted} />
+          </View>
+        </TouchableOpacity>
+        <Text style={styles.title}>Bibliothèque</Text>
+      </View>
+      <View style={styles.headerActions}>
+        <TouchableOpacity
+          style={styles.actionIcon}
+          onPress={() => navigation.navigate('Rechercher')}>
+          <Ionicons name="search-outline" size={26} color={Colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionIcon}
+          onPress={() => navigation.navigate('Créer')}>
+          <Ionicons name="add-outline" size={30} color={Colors.text} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <TouchableOpacity
-            onPress={() => setShowMenu(!showMenu)}
-            activeOpacity={0.8}>
-            <View style={styles.profilePic} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Bibliothèque</Text>
-        </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={styles.actionIcon}
-            onPress={() => navigation.navigate('Rechercher')}>
-            <Ionicons name="search-outline" size={26} color="#FDFBF7" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionIcon}
-            onPress={() => navigation.navigate('Créer')}>
-            <Ionicons name="add-outline" size={30} color="#FDFBF7" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {renderHeader()}
+
       {/* Menu déroulant du profil */}
       {showMenu && (
         <View style={styles.profileMenu}>
@@ -70,7 +83,7 @@ export default function Library({navigation, route}) {
               setShowMenu(false);
               Alert.alert('Notifications', 'Aucune nouvelle notification.');
             }}>
-            <Ionicons name="notifications-outline" size={24} color="#FDFBF7" />
+            <Ionicons name="notifications-outline" size={24} color={Colors.text} />
             <Text style={styles.menuText}>Notifications</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -79,7 +92,7 @@ export default function Library({navigation, route}) {
               setShowMenu(false);
               Alert.alert('Historique', 'Historique des écoutes.');
             }}>
-            <Ionicons name="time-outline" size={24} color="#FDFBF7" />
+            <Ionicons name="time-outline" size={24} color={Colors.text} />
             <Text style={styles.menuText}>Historique</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -88,76 +101,100 @@ export default function Library({navigation, route}) {
               setShowMenu(false);
               Alert.alert('Paramètres', 'Ouverture des paramètres...');
             }}>
-            <Ionicons name="settings-outline" size={24} color="#FDFBF7" />
+            <Ionicons name="settings-outline" size={24} color={Colors.text} />
             <Text style={styles.menuText}>Paramètres</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Condition : Si la liste est vide, on affiche le texte, sinon on affiche les playlists */}
-      {myPlaylists.length === 0 ? (
-        <Text style={styles.emptyText}>
-          Votre bibliothèque est vide pour le moment.
-        </Text>
-      ) : (
-        <ScrollView
-          style={styles.playlistContainer}
-          showsVerticalScrollIndicator={false}>
-          {myPlaylists.map((playlist, index) => (
+      <View style={styles.filterRow}>
+        <TouchableOpacity style={[styles.filterPill, styles.activePill]}>
+          <Text style={styles.activeFilterText}>Playlists</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterPill}>
+          <Text style={styles.filterText}>Artistes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterPill}>
+          <Text style={styles.filterText}>Albums</Text>
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={myPlaylists}
+        keyExtractor={item => item.id}
+        renderItem={({item}) => (
+          <TrackListItem
+            item={item}
+            onPress={() =>
+              navigation.navigate('MusicPage', {
+                item: item,
+              })
+            }
+          />
+        )}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="library-outline" size={64} color={Colors.surfaceLight} />
+            <Text style={styles.emptyText}>
+              Votre bibliothèque est vide pour le moment.
+            </Text>
             <TouchableOpacity
-              key={index}
-              style={styles.playlistCard}
-              activeOpacity={0.8}
-              onPress={() =>
-                navigation.navigate('MusicPage', {
-                  item: {
-                    title: playlist.name,
-                    artist: 'Playlist • Vous',
-                    image: playlist.image,
-                  },
-                })
-              }>
-              <Image source={playlist.image} style={styles.playlistCover} />
-              <View style={styles.playlistInfo}>
-                <Text style={styles.playlistTitle}>{playlist.name}</Text>
-                <Text style={styles.playlistSubtitle}>Playlist • Vous</Text>
-              </View>
+              style={styles.createBtn}
+              onPress={() => navigation.navigate('Créer')}
+            >
+              <Text style={styles.createBtnText}>Créer une playlist</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+          </View>
+        }
+        contentContainerStyle={{paddingBottom: 120}}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#181411', padding: 16, paddingTop: 60},
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingTop: 60
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    marginBottom: 20,
   },
   profilePic: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#2C241E',
+    backgroundColor: Colors.surface,
     marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
-  title: {color: '#FDFBF7', fontSize: 24, fontWeight: 'bold'},
+  title: {color: Colors.text, fontSize: 24, fontWeight: 'bold'},
   headerActions: {flexDirection: 'row', alignItems: 'center'},
   actionIcon: {marginLeft: 20},
   profileMenu: {
-    backgroundColor: '#2C241E',
+    position: 'absolute',
+    top: 110,
+    left: 16,
+    right: 16,
+    zIndex: 10,
+    backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: 8,
-    marginBottom: 24,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   menuItem: {
     flexDirection: 'row',
@@ -165,22 +202,61 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  menuText: {color: '#FDFBF7', fontSize: 16, marginLeft: 16, fontWeight: '600'},
+  menuText: {color: Colors.text, fontSize: 16, marginLeft: 16, fontWeight: '600'},
+  filterRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    gap: 10,
+  },
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  activePill: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  filterText: {
+    color: Colors.text,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  activeFilterText: {
+    color: Colors.background,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 80,
+    paddingHorizontal: 40,
+  },
   emptyText: {
-    color: '#C4A484',
+    color: Colors.muted,
     fontSize: 16,
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 20,
+    lineHeight: 24,
   },
-  playlistContainer: {flex: 1, marginTop: 10},
-  playlistCard: {flexDirection: 'row', alignItems: 'center', marginBottom: 16},
-  playlistCover: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#2C241E',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+  createBtn: {
+    marginTop: 24,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
-  playlistSubtitle: {color: '#C4A484', fontSize: 14},
+  createBtnText: {
+    color: Colors.primary,
+    fontWeight: '700',
+    fontSize: 15,
+  },
 });

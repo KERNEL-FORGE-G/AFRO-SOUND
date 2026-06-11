@@ -5,100 +5,164 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  Alert,
+  FlatList,
 } from 'react-native';
-import theme, {Colors} from '../theme';
+import {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {usePlayer} from '../context/PlayerContext';
+import TrackListItem from '../components/TrackListItem';
 
 export default function MusicPage({route, navigation}) {
-  // On récupère l'élément passé en paramètre, ou on définit des valeurs par défaut
-  const {item} = route.params || {};
-  const title = item?.title || 'Titre inconnu';
-  const artist = item?.artist || 'Artiste inconnu';
-  const image = item?.image || require('../../assets/1.jpg');
+  const {item, tracks = []} = route.params || {};
+  const {playTrack, currentTrack} = usePlayer();
 
-  return (
-    <View style={theme.container}>
-      <View style={{paddingTop: 24, paddingHorizontal: 20}}>
-        <Text style={{color: '#FDFBF7', fontSize: 22, fontWeight: '700'}}>
-          Playlist
-        </Text>
-      </View>
+  const title = item?.title || 'Playlist';
+  const artist = item?.artist || 'Artiste inconnu';
+  const image = item?.image || item?.cover || item?.cover_url;
+
+  const handlePlayAll = async () => {
+    if (tracks.length > 0) {
+      await playTrack(tracks[0], tracks);
+      navigation.navigate('NowPlaying');
+    } else if (item) {
+      await playTrack(item, [item]);
+      navigation.navigate('NowPlaying');
+    }
+  };
+
+  const renderHeader = () => (
+    <View style={styles.headerContent}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={28} color={Colors.text} />
+      </TouchableOpacity>
 
       <View style={styles.artContainer}>
-        <Image source={image} style={styles.art} />
+        <Image
+          source={typeof image === 'string' ? {uri: image} : image || require('../../assets/2.jpg')}
+          style={styles.art}
+        />
       </View>
 
-      <View style={{paddingHorizontal: 20}}>
-        <Text style={styles.trackTitle}>{title}</Text>
-        <Text style={styles.trackArtist}>{artist}</Text>
+      <View style={styles.infoContainer}>
+        <Text style={styles.playlistTitle}>{title}</Text>
+        <Text style={styles.playlistArtist}>{artist}</Text>
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity
-          style={styles.smallBtn}
-          onPress={() =>
-            Alert.alert('Aléatoire', 'Lecture aléatoire activée !')
-          }>
-          <Ionicons name="shuffle" size={24} color="#FDFBF7" />
+        <TouchableOpacity style={styles.playBtn} onPress={handlePlayAll}>
+          <Ionicons name="play" size={28} color={Colors.background} />
+          <Text style={styles.playBtnText}>Lecture</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.bigBtn}
-          onPress={() => navigation.navigate('NowPlaying')}
-          activeOpacity={0.9}>
-          <Ionicons
-            name="play"
-            size={32}
-            color="#181411"
-            style={{marginLeft: 4}}
-          />
+
+        <TouchableOpacity style={styles.actionBtn}>
+          <Ionicons name="shuffle" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.smallBtn}
-          onPress={() => Alert.alert('Favoris', 'Ajouté à vos titres likés !')}>
-          <Ionicons name="heart-outline" size={24} color="#FDFBF7" />
+
+        <TouchableOpacity style={styles.actionBtn}>
+          <Ionicons name="heart-outline" size={24} color={Colors.text} />
         </TouchableOpacity>
       </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        data={tracks.length > 0 ? tracks : item ? [item] : []}
+        keyExtractor={(track, index) => track.id || String(index)}
+        ListHeaderComponent={renderHeader}
+        renderItem={({item: track}) => (
+          <TrackListItem
+            item={track}
+            isActive={currentTrack?.id === track.id}
+            onPress={async () => {
+              await playTrack(track, tracks.length > 0 ? tracks : [item]);
+              navigation.navigate('NowPlaying');
+            }}
+          />
+        )}
+        contentContainerStyle={styles.listContent}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  artContainer: {padding: 24, alignItems: 'center'},
-  art: {width: 280, height: 280, borderRadius: 24}, // Plus grand et arrondi
-  trackTitle: {
-    color: '#FDFBF7',
-    fontSize: 24,
-    fontWeight: '800',
-    marginTop: 12,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
   },
-  trackArtist: {color: '#C4A484', fontSize: 16, marginTop: 4},
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 32,
+  listContent: {
+    paddingBottom: 100,
+  },
+  headerContent: {
+    paddingTop: 40,
     alignItems: 'center',
     paddingHorizontal: 20,
+    marginBottom: 20,
   },
-  smallBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#2C241E',
-    justifyContent: 'center',
-    alignItems: 'center',
+  backButton: {
+    alignSelf: 'flex-start',
+    padding: 10,
+    marginLeft: -10,
   },
-  bigBtn: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E67E22',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#E67E22',
-    shadowOffset: {width: 0, height: 4},
+  artContainer: {
+    marginVertical: 20,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 10},
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowRadius: 15,
+  },
+  art: {
+    width: 220,
+    height: 220,
+    borderRadius: 12,
+  },
+  infoContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  playlistTitle: {
+    color: Colors.text,
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  playlistArtist: {
+    color: Colors.muted,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  controls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  playBtn: {
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 30,
+    gap: 8,
+  },
+  playBtnText: {
+    color: Colors.background,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  actionBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
