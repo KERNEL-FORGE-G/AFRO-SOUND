@@ -20,6 +20,7 @@ import CreatePlaylist from '../screens/CreatePlaylist';
 import Login from '../screens/Login';
 import GroupPlaylist from '../screens/GroupPlaylist';
 import {Colors} from '../theme';
+import useAuth from '../hooks/useAuth';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -69,19 +70,26 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
+  const {user} = useAuth();
+
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{headerShown: false}}>
-        <Stack.Screen name="GetStarted" component={GetStarted} />
-        <Stack.Screen name="ChooseMode" component={ChooseMode} />
-        <Stack.Screen name="Loading" component={Loading} />
-        <Stack.Screen name="Login" component={Login} />
-        <Stack.Screen name="GroupPlaylist" component={GroupPlaylist} />
+        {!user ? (
+          <>
+            <Stack.Screen name="GetStarted" component={GetStarted} />
+            <Stack.Screen name="ChooseMode" component={ChooseMode} />
+            <Stack.Screen name="Login" component={Login} />
+            <Stack.Screen name="Register" component={Register} />
+          </>
+        ) : null}
+
         <Stack.Screen name="Home" component={MainTabs} />
+        <Stack.Screen name="Loading" component={Loading} />
+        <Stack.Screen name="GroupPlaylist" component={GroupPlaylist} />
         <Stack.Screen name="MusicPage" component={MusicPage} />
         <Stack.Screen name="NowPlaying" component={NowPlaying} />
         <Stack.Screen name="Lyrics" component={Lyrics} />
-        <Stack.Screen name="Register" component={Register} />
         <Stack.Screen name="SearchResults" component={SearchResults} />
       </Stack.Navigator>
     </NavigationContainer>

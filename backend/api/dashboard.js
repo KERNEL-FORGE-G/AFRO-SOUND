@@ -105,12 +105,15 @@ module.exports = `<!DOCTYPE html>
   </div>
 
   <div class="panel">
-    <h3>🗄️ Supabase — Songs</h3>
-    <div class="row">
-      <button onclick="doSongs()">GET /api/songs</button>
+    <h3>🗄️ Supabase — Gestion</h3>
+    <div class="row" style="margin-bottom: 12px;">
+      <button onclick="doSongs()">Titres (Public)</button>
+      <button class="secondary" onclick="doAdminProfiles()">Utilisateurs</button>
+      <button class="secondary" onclick="doAdminPlaylists()">Playlists</button>
     </div>
     <div class="meta" id="db-meta"></div>
-    <pre id="db-out">—</pre>
+    <div id="db-list" style="margin-top:12px"></div>
+    <pre id="db-out" style="margin-top:12px; display:none">—</pre>
   </div>
 
   <div class="panel">
@@ -197,11 +200,21 @@ module.exports = `<!DOCTYPE html>
       var img = el('img', {src: t.cover || '', alt: ''});
       var btn = el('button', {text: '▶ Lire'});
       btn.onclick = function () { playStream(t.audioUrl, (t.title || '') + ' — ' + (t.artist || '')); };
+
+      var delBtn = el('button', {text: '🗑 Suppr', 'class': 'secondary', style: 'margin-left: 8px; border-color: var(--danger); color: var(--danger);'});
+      delBtn.onclick = async function() {
+        if(!confirm('Supprimer ce titre ?')) return;
+        try {
+          await fetch('/api/admin/tracks/' + t.id, {method: 'DELETE'});
+          doSongs(); // Refresh
+        } catch(e) { alert(e.message); }
+      };
+
       var info = el('div', {}, [
         el('div', {'class': 't', text: t.title || '(sans titre)'}),
         el('div', {'class': 'a', text: t.artist || ''}),
         el('div', {'class': 'src', text: t.source || ''}),
-        btn,
+        el('div', {}, [btn, delBtn]),
       ]);
       container.appendChild(el('div', {'class': 'track'}, [img, info]));
     });
@@ -241,10 +254,37 @@ module.exports = `<!DOCTYPE html>
 
   async function doSongs() {
     var meta = document.getElementById('db-meta');
-    meta.textContent = 'Chargement…';
+    var out = document.getElementById('db-out');
+    var list = document.getElementById('db-list');
+    meta.textContent = 'Chargement des titres…';
+    list.innerHTML = ''; out.style.display = 'none';
     try {
       var d = await fetchJson('/api/songs', meta);
-      document.getElementById('db-out').textContent = JSON.stringify(d, null, 2);
+      renderTracks(d, list);
+    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
+  }
+
+  async function doAdminProfiles() {
+    var meta = document.getElementById('db-meta');
+    var out = document.getElementById('db-out');
+    var list = document.getElementById('db-list');
+    meta.textContent = 'Chargement des profils…';
+    list.innerHTML = ''; out.style.display = 'block';
+    try {
+      var d = await fetchJson('/api/admin/profiles', meta);
+      out.textContent = JSON.stringify(d, null, 2);
+    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
+  }
+
+  async function doAdminPlaylists() {
+    var meta = document.getElementById('db-meta');
+    var out = document.getElementById('db-out');
+    var list = document.getElementById('db-list');
+    meta.textContent = 'Chargement des playlists…';
+    list.innerHTML = ''; out.style.display = 'block';
+    try {
+      var d = await fetchJson('/api/admin/playlists', meta);
+      out.textContent = JSON.stringify(d, null, 2);
     } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
   }
 

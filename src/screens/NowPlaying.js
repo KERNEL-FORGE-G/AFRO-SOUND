@@ -18,6 +18,8 @@ import {
   State,
   getPlaybackStateValue,
 } from '../context/PlayerContext';
+import {supabase} from '../supabaseClient';
+import useAuth from '../hooks/useAuth';
 
 const getArtwork = track => track?.artwork || track?.cover || track?.cover_url;
 const getArtist = track =>
@@ -30,6 +32,7 @@ const formatTime = secs => {
 };
 
 export default function NowPlaying({navigation, route}) {
+  const {user} = useAuth();
   const routeTrack = route.params?.track;
   const {
     currentTrack,
@@ -78,6 +81,75 @@ export default function NowPlaying({navigation, route}) {
     }
   }, [isPlaying]);
 
+  useEffect(() => {
+    if (user && track.id) {
+      checkIfLiked();
+    }
+  }, [user, track.id]);
+
+  const checkIfLiked = async () => {
+    try {
+      const {data, error} = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('track_id', track.id)
+        .single();
+
+      if (data) {
+        setIsLiked(true);
+      } else {
+        setIsLiked(false);
+      }
+    } catch (e) {
+      setIsLiked(false);
+    }
+  };
+
+  const toggleLike = async () => {
+    if (!user) {
+      Alert.alert('Connexion requise', 'Connectez-vous pour liker ce titre.');
+      navigation.navigate('Login');
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        const {error} = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('track_id', track.id);
+        if (error) throw error;
+        setIsLiked(false);
+      } else {
+        // Ensure track exists in tracks table first
+        await supabase.from('tracks').upsert([
+          {
+            id: track.id,
+            title: track.title,
+            artist: track.artist,
+            cover_url: track.artwork || track.cover || track.cover_url,
+            audio_url: track.url || track.audioUrl,
+            source: track.source,
+            duration: track.duration,
+          },
+        ]);
+
+        const {error} = await supabase.from('favorites').insert([
+          {
+            user_id: user.id,
+            track_id: track.id,
+          },
+        ]);
+        if (error) throw error;
+        setIsLiked(true);
+      }
+    } catch (e) {
+      Alert.alert('Erreur', e.message);
+    }
+  };
+
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -110,7 +182,7 @@ export default function NowPlaying({navigation, route}) {
     {
       icon: isLiked ? 'heart' : 'heart-outline',
       label: 'Like',
-      onPress: () => setIsLiked(!isLiked),
+      onPress: toggleLike,
     },
     {
       icon: 'text-outline',
@@ -173,7 +245,7 @@ export default function NowPlaying({navigation, route}) {
               <Text style={styles.trackArtist} numberOfLines={1}>
                 {getArtist(track)}
               </Text>
-              <TouchableOpacity onPress={() => setIsLiked(!isLiked)}>
+              <TouchableOpacity onPress={toggleLike}>
                 <Ionicons
                   name={isLiked ? 'heart' : 'heart-outline'}
                   size={22}
