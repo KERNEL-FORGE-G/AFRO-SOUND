@@ -9,53 +9,40 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialisation Supabase (paresseuse : on n'instancie le client que si les
-// variables d'environnement sont présentes, sinon supabase-js lève une erreur
-// au démarrage et fait planter TOUTE la fonction, y compris /api/health).
 let supabase = null;
 if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
   supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
   );
-} else {
-  console.warn(
-    '[Backend] SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY manquants : ' +
-      'les routes Supabase sont désactivées.',
-  );
 }
 
 const JAMENDO_CLIENT_ID = process.env.JAMENDO_CLIENT_ID;
-
-// ── Audius ────────────────────────────────────────────────────────────────
-// La lecture/recherche Audius est gratuite et ne demande qu'un app_name.
 const AUDIUS_APP_NAME = process.env.AUDIUS_APP_NAME || 'AFRO_SOUND';
+const ADMIN_KEY = process.env.ADMIN_KEY || 'afrosound_secret_2026';
+
 const AUDIUS_FALLBACK_HOST = 'https://discoveryprovider.audius.co';
 let audiusHost = null;
 
-// Résout (et met en cache) un hôte "discovery provider" Audius.
 async function getAudiusHost() {
-  if (audiusHost) {
-    return audiusHost;
-  }
+  if (audiusHost) return audiusHost;
   try {
-    const {data} = await axios.get('https://api.audius.co', {timeout: 8000});
+    const {data} = await axios.get('https://api.audius.co', {timeout: 5000});
     if (Array.isArray(data?.data) && data.data.length) {
       audiusHost = data.data[0];
     }
   } catch (e) {
-    console.warn('[Audius] Résolution hôte échouée:', e.message);
+    console.warn('[Audius] Host resolution failed:', e.message);
   }
   return audiusHost || AUDIUS_FALLBACK_HOST;
 }
 
-// Normalise un track Audius vers l'objet unifié de l'app.
 function normalizeAudius(track, host) {
   const art = track.artwork || {};
   return {
     id: `audius_${track.id}`,
     title: track.title,
-    artist: track.user?.name || 'Artiste inconnu',
+    artist: track.user?.name || 'Unknown Artist',
     album: '',
     audioUrl: `${host}/v1/tracks/${track.id}/stream?app_name=${AUDIUS_APP_NAME}`,
     cover: art['480x480'] || art['1000x1000'] || art['150x150'] || null,
@@ -64,17 +51,24 @@ function normalizeAudius(track, host) {
   };
 }
 
-// Panel de surveillance + testeur d'API (page web).
+// Middleware d'authentification simple
+function auth(req, res, next) {
+  const key = req.headers['x-admin-key'] || req.query.key;
+  if (key === ADMIN_KEY) {
+    next();
+  } else {
+    res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+}
+
 app.get(['/', '/dashboard'], (req, res) => {
   res.set('Content-Type', 'text/html; charset=utf-8').send(DASHBOARD_HTML);
 });
 
-// Route de test
 app.get('/api/health', (req, res) => {
-  res.json({status: 'ok', message: 'AfroSound Backend is running'});
+  res.json({success: true, status: 'ok', message: 'AfroSound Backend is running'});
 });
 
-// État du backend (sans exposer de secrets) — alimente le panel.
 app.get('/api/status', async (req, res) => {
   let audiusReachable = false;
   try {
@@ -83,7 +77,7 @@ app.get('/api/status', async (req, res) => {
     audiusReachable = false;
   }
   res.json({
-    status: 'ok',
+    success: true,
     uptimeSeconds: Math.round(process.uptime()),
     node: process.version,
     env: {
@@ -96,29 +90,22 @@ app.get('/api/status', async (req, res) => {
   });
 });
 
-// Proxy Audius — recherche
 app.get('/api/audius/search', async (req, res) => {
   const {query, limit = 10} = req.query;
-  if (!query) {
-    return res.status(400).json({error: 'Query parameter is required'});
-  }
+  if (!query) return res.status(400).json({success: false, error: 'Query parameter required'});
   try {
     const host = await getAudiusHost();
     const response = await axios.get(`${host}/v1/tracks/search`, {
       params: {query, app_name: AUDIUS_APP_NAME, limit},
       timeout: 10000,
     });
-    const tracks = (response.data?.data || []).map(t =>
-      normalizeAudius(t, host),
-    );
-    res.json(tracks);
+    const tracks = (response.data?.data || []).map(t => normalizeAudius(t, host));
+    res.json(tracks); // On garde le format array pour la compatibilité frontend
   } catch (error) {
-    console.error('Audius search error:', error.message);
-    res.status(502).json({error: 'Failed to fetch from Audius'});
+    res.status(502).json({success: false, error: 'Audius fetch failed'});
   }
 });
 
-// Proxy Audius — tendances (genre optionnel, ex. "Afrobeats")
 app.get('/api/audius/trending', async (req, res) => {
   const {genre, limit = 20} = req.query;
   try {
@@ -127,39 +114,16 @@ app.get('/api/audius/trending', async (req, res) => {
       params: {app_name: AUDIUS_APP_NAME, ...(genre ? {genre} : {})},
       timeout: 10000,
     });
-    const tracks = (response.data?.data || [])
-      .slice(0, Number(limit))
-      .map(t => normalizeAudius(t, host));
-    res.json(tracks);
+    const tracks = (response.data?.data || []).slice(0, Number(limit)).map(t => normalizeAudius(t, host));
+    res.json(tracks); // Compatibilité
   } catch (error) {
-    console.error('Audius trending error:', error.message);
-    res.status(502).json({error: 'Failed to fetch trending from Audius'});
+    res.status(502).json({success: false, error: 'Audius trending fetch failed'});
   }
 });
 
-// Redirige vers le flux audio d'un track Audius (id sans le préfixe "audius_")
-app.get('/api/audius/stream/:id', async (req, res) => {
-  try {
-    const host = await getAudiusHost();
-    const id = req.params.id.replace(/^audius_/, '');
-    res.redirect(
-      302,
-      `${host}/v1/tracks/${id}/stream?app_name=${AUDIUS_APP_NAME}`,
-    );
-  } catch (error) {
-    console.error('Audius stream error:', error.message);
-    res.status(502).json({error: 'Failed to resolve Audius stream'});
-  }
-});
-
-// Proxy Jamendo
 app.get('/api/jamendo/search', async (req, res) => {
   const {query, limit = 10} = req.query;
-
-  if (!query) {
-    return res.status(400).json({error: 'Query parameter is required'});
-  }
-
+  if (!query) return res.status(400).json({success: false, error: 'Query parameter required'});
   try {
     const response = await axios.get('https://api.jamendo.com/v3.0/tracks/', {
       params: {
@@ -170,7 +134,6 @@ app.get('/api/jamendo/search', async (req, res) => {
         include: 'musicinfo',
       },
     });
-
     const tracks = response.data.results.map(track => ({
       id: `jamendo_${track.id}`,
       title: track.name,
@@ -181,103 +144,112 @@ app.get('/api/jamendo/search', async (req, res) => {
       source: 'jamendo',
       duration: track.duration,
     }));
-
-    res.json(tracks);
+    res.json(tracks); // Compatibilité
   } catch (error) {
-    console.error('Jamendo API error:', error.message);
-    res.status(500).json({error: 'Failed to fetch from Jamendo'});
+    res.status(500).json({success: false, error: 'Jamendo fetch failed'});
   }
 });
 
-// Route pour récupérer les chansons depuis Supabase
 app.get('/api/songs', async (req, res) => {
-  if (!supabase) {
-    return res
-      .status(503)
-      .json({error: 'Supabase non configuré sur le serveur'});
-  }
+  if (!supabase) return res.status(503).json({success: false, error: 'Supabase not configured'});
   try {
-    // On essaie d'abord 'songs', sinon 'tracks'
-    let {data, error} = await supabase
-      .from('songs')
-      .select('*')
-      .order('created_at', {ascending: false});
-
-    if (error || !data || data.length === 0) {
-      const {data: tracksData, error: tracksError} = await supabase
-        .from('tracks')
-        .select('*, artists(name)')
-        .order('created_at', {ascending: false});
-
-      if (!tracksError) {
-        data = tracksData.map(t => ({
-          ...t,
-          artist: t.artists?.name || t.artist,
-          cover: t.cover_url || t.cover,
-        }));
-      }
-    }
-
-    res.json(data || []);
+    let {data, error} = await supabase.from('tracks').select('*').order('created_at', {ascending: false});
+    if (error) throw error;
+    res.json(data || []); // Compatibilité
   } catch (error) {
-    res.status(500).json({error: error.message});
+    res.status(500).json({success: false, error: error.message});
   }
 });
 
-// --- ADMIN CRUD ROUTES ---
+// --- ADMIN ROUTES (Protected) ---
 
-// Gestion des TITRES
-app.post('/api/admin/tracks', async (req, res) => {
-  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
-  const {id, title, artist, cover_url, audio_url, source, duration} = req.body;
-  const {data, error} = await supabase
-    .from('tracks')
-    .upsert([{id, title, artist, cover_url, audio_url, source, duration}]);
-  if (error) return res.status(400).json({error: error.message});
-  res.json({success: true, data});
+app.get('/api/admin/ping/supabase', auth, async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase non configuré' });
+  try {
+    const { data, error } = await supabase.from('tracks').select('id').limit(1);
+    if (error) throw error;
+    res.json({ success: true, message: 'Connexion Supabase OK', data });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-app.delete('/api/admin/tracks/:id', async (req, res) => {
-  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
-  const {error} = await supabase.from('tracks').delete().eq('id', req.params.id);
-  if (error) return res.status(400).json({error: error.message});
-  res.json({success: true});
+app.get('/api/admin/ping/audio', auth, async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({ success: false, error: 'URL manquante' });
+  try {
+    const response = await axios.head(url, { timeout: 5000 });
+    res.json({
+      success: true,
+      status: response.status,
+      contentType: response.headers['content-type'],
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// Gestion des PLAYLISTS
-app.get('/api/admin/playlists', async (req, res) => {
-  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
-  const {data, error} = await supabase
-    .from('playlists')
-    .select('*, profiles(username)');
-  if (error) return res.status(400).json({error: error.message});
-  res.json(data);
+app.post('/api/admin/tracks', auth, async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase indisponible' });
+  try {
+    const { id, title, artist, cover_url, audio_url, source, duration } = req.body;
+    const { data, error } = await supabase
+      .from('tracks')
+      .upsert([{ id, title, artist, cover_url, audio_url, source, duration }]);
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 });
 
-app.delete('/api/admin/playlists/:id', async (req, res) => {
-  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
-  const {error} = await supabase
-    .from('playlists')
-    .delete()
-    .eq('id', req.params.id);
-  if (error) return res.status(400).json({error: error.message});
-  res.json({success: true});
+app.delete('/api/admin/tracks/:id', auth, async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase indisponible' });
+  try {
+    const { error } = await supabase.from('tracks').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 });
 
-// Gestion des UTILISATEURS (via profiles)
-app.get('/api/admin/profiles', async (req, res) => {
-  if (!supabase) return res.status(503).json({error: 'Supabase indisponible'});
-  const {data, error} = await supabase.from('profiles').select('*');
-  if (error) return res.status(400).json({error: error.message});
-  res.json(data);
+app.get('/api/admin/playlists', auth, async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase indisponible' });
+  try {
+    const { data, error } = await supabase.from('playlists').select('*, profiles(username)');
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 });
 
-// Exporter pour Vercel
+app.delete('/api/admin/playlists/:id', auth, async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase indisponible' });
+  try {
+    const { error } = await supabase.from('playlists').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/admin/profiles', auth, async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase indisponible' });
+  try {
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
 }
 
 module.exports = app;

@@ -1,305 +1,386 @@
-// Panel de surveillance + testeur d'API servi par le backend Vercel.
-// HTML autonome (CSS + JS inline). Le JS client n'utilise PAS de backticks ni
-// de `${}` afin de ne pas interférer avec ce template literal serveur.
 module.exports = `<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AFRO SOUND — Panel backend</title>
-<style>
-  :root {
-    --bg: #0d0f12; --card: #16191f; --border: #262b33; --text: #e9edf2;
-    --muted: #8b94a3; --primary: #1db954; --accent: #ff7a00; --danger: #ff4d4f;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    background: var(--bg); color: var(--text); line-height: 1.45;
-  }
-  header {
-    padding: 20px 24px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-  }
-  header h1 { margin: 0; font-size: 20px; letter-spacing: .5px; }
-  header h1 span { color: var(--primary); }
-  header .sub { color: var(--muted); font-size: 13px; }
-  main { padding: 24px; max-width: 1100px; margin: 0 auto; }
-  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 28px 0 12px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-  .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
-  .card .value { font-size: 18px; font-weight: 600; margin-top: 6px; word-break: break-word; }
-  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
-  .ok { background: var(--primary); } .ko { background: var(--danger); } .warn { background: var(--accent); }
-  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-  .panel h3 { margin: 0 0 12px; font-size: 15px; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-  input, select {
-    background: #0f1216; border: 1px solid var(--border); color: var(--text);
-    padding: 9px 11px; border-radius: 8px; font-size: 14px; min-width: 120px;
-  }
-  input:focus, select:focus { outline: none; border-color: var(--primary); }
-  button {
-    background: var(--primary); color: #04120a; border: none; padding: 9px 16px;
-    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
-  }
-  button.secondary { background: #222831; color: var(--text); border: 1px solid var(--border); }
-  button:hover { filter: brightness(1.08); }
-  button:disabled { opacity: .5; cursor: default; }
-  .meta { color: var(--muted); font-size: 12px; margin: 10px 0; }
-  pre {
-    background: #0f1216; border: 1px solid var(--border); border-radius: 8px;
-    padding: 12px; overflow: auto; max-height: 320px; font-size: 12.5px; margin: 0;
-  }
-  .tracks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
-  .track { display: flex; gap: 10px; background: #0f1216; border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
-  .track img { width: 56px; height: 56px; border-radius: 6px; object-fit: cover; background: #222; }
-  .track .t { font-weight: 600; font-size: 14px; }
-  .track .a { color: var(--muted); font-size: 12px; }
-  .track .src { display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); margin-top: 4px; }
-  .track button { margin-top: 6px; padding: 5px 10px; font-size: 12px; }
-  footer { color: var(--muted); font-size: 12px; text-align: center; padding: 24px; }
-  .player { position: sticky; bottom: 0; background: var(--card); border-top: 1px solid var(--border); padding: 12px 24px; }
-  .player audio { width: 100%; }
-  .player .now { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AFRO SOUND - Admin Panel</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0b1020; color: #e9edf2; }
+        .primary-orange { color: #F97316; }
+        .bg-primary-orange { background-color: #F97316; }
+        .border-primary-orange { border-color: #F97316; }
+    </style>
 </head>
 <body>
-<header>
-  <div>
-    <h1>AFRO <span>SOUND</span> — Panel backend</h1>
-    <div class="sub">Surveillance & test des API — backend Vercel</div>
-  </div>
-  <button class="secondary" onclick="loadStatus()">↻ Rafraîchir l'état</button>
-</header>
+    <div id="root"></div>
 
-<main>
-  <h2>État du serveur</h2>
-  <div class="grid" id="status-grid">
-    <div class="card"><div class="label">Chargement…</div></div>
-  </div>
+    <script type="text/babel">
+        const { useState, useEffect } = React;
 
-  <h2>Tester les API</h2>
+        const StatusCard = ({ label, value, state }) => {
+            const dotColor = state === 'ok' ? 'bg-green-500' : state === 'ko' ? 'bg-red-500' : 'bg-orange-500';
+            return (
+                <div className="bg-[#16191f] border border-[#262b33] rounded-xl p-4">
+                    <div className="text-gray-400 text-xs uppercase tracking-wider">{label}</div>
+                    <div className="text-lg font-semibold mt-2 flex items-center">
+                        {state && <span className={"w-2.5 h-2.5 rounded-full mr-2 " + dotColor}></span>}
+                        {value}
+                    </div>
+                </div>
+            );
+        };
 
-  <div class="panel">
-    <h3>🔎 Audius — Recherche</h3>
-    <div class="row">
-      <input id="s-query" placeholder="ex. burna boy" value="burna boy" />
-      <input id="s-limit" type="number" value="6" min="1" max="50" style="min-width:80px" />
-      <button onclick="doSearch()">Rechercher</button>
-    </div>
-    <div class="meta" id="s-meta"></div>
-    <div class="tracks" id="s-tracks"></div>
-  </div>
+        const App = () => {
+            const [status, setStatus] = useState(null);
+            const [pingResult, setPingResult] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('burna boy');
+            const [searchResults, setSearchResults] = useState([]);
+            const [library, setLibrary] = useState([]);
+            const [profiles, setProfiles] = useState([]);
+            const [playlists, setPlaylists] = useState([]);
+            const [view, setView] = useState('status');
+            const [adminKey, setAdminKey] = useState(localStorage.getItem('afrosound_admin_key') || '');
+            const [isAuth, setIsAuth] = useState(false);
 
-  <div class="panel">
-    <h3>🔥 Audius — Tendances</h3>
-    <div class="row">
-      <input id="t-genre" placeholder="genre optionnel (ex. Afrobeats)" />
-      <input id="t-limit" type="number" value="6" min="1" max="50" style="min-width:80px" />
-      <button onclick="doTrending()">Charger les tendances</button>
-    </div>
-    <div class="meta" id="t-meta"></div>
-    <div class="tracks" id="t-tracks"></div>
-  </div>
+            useEffect(() => {
+                loadStatus();
+                if (adminKey) checkAuth();
+            }, []);
 
-  <div class="panel">
-    <h3>🗄️ Supabase — Gestion</h3>
-    <div class="row" style="margin-bottom: 12px;">
-      <button onclick="doSongs()">Titres (Public)</button>
-      <button class="secondary" onclick="doAdminProfiles()">Utilisateurs</button>
-      <button class="secondary" onclick="doAdminPlaylists()">Playlists</button>
-    </div>
-    <div class="meta" id="db-meta"></div>
-    <div id="db-list" style="margin-top:12px"></div>
-    <pre id="db-out" style="margin-top:12px; display:none">—</pre>
-  </div>
+            const checkAuth = () => {
+                setIsAuth(true);
+                localStorage.setItem('afrosound_admin_key', adminKey);
+            };
 
-  <div class="panel">
-    <h3>🧪 Requête brute</h3>
-    <div class="row">
-      <select id="r-path">
-        <option value="/api/health">/api/health</option>
-        <option value="/api/status">/api/status</option>
-        <option value="/api/audius/search?query=davido&limit=3">/api/audius/search?query=davido&limit=3</option>
-        <option value="/api/audius/trending?limit=3">/api/audius/trending?limit=3</option>
-        <option value="/api/songs">/api/songs</option>
-      </select>
-      <input id="r-custom" placeholder="…ou un chemin perso /api/…" style="min-width:260px" />
-      <button onclick="doRaw()">Envoyer</button>
-    </div>
-    <div class="meta" id="r-meta"></div>
-    <pre id="r-out">—</pre>
-  </div>
-</main>
+            const adminFetch = async (url, options = {}) => {
+                const sep = url.includes('?') ? '&' : '?';
+                const finalUrl = url + sep + 'key=' + adminKey;
+                const res = await fetch(finalUrl, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'x-admin-key': adminKey
+                    }
+                });
+                if (res.status === 401) {
+                    setIsAuth(false);
+                    throw new Error('Unauthorized');
+                }
+                return res;
+            };
 
-<div class="player">
-  <div class="now" id="now">Aucune lecture</div>
-  <audio id="audio" controls preload="none"></audio>
-</div>
+            const loadStatus = async () => {
+                try {
+                    const res = await fetch('/api/status');
+                    const data = await res.json();
+                    setStatus(data);
+                } catch (e) { console.error(e); }
+            };
 
-<footer>AFRO SOUND · panel servi par le backend Vercel</footer>
+            const pingSupabase = async () => {
+                setPingResult({ type: 'Supabase', message: 'En cours...' });
+                try {
+                    const res = await adminFetch('/api/admin/ping/supabase');
+                    const data = await res.json();
+                    setPingResult({ type: 'Supabase', ...data });
+                } catch (e) { setPingResult({ type: 'Supabase', success: false, error: e.message }); }
+            };
 
-<script>
-  function el(tag, props, children) {
-    var e = document.createElement(tag);
-    if (props) { for (var k in props) {
-      if (k === 'text') { e.textContent = props[k]; }
-      else if (k === 'html') { e.innerHTML = props[k]; }
-      else { e.setAttribute(k, props[k]); }
-    } }
-    (children || []).forEach(function (c) { if (c) e.appendChild(c); });
-    return e;
-  }
+            const pingAudio = async (url) => {
+                if (!url) return alert('Entrez une URL');
+                setPingResult({ type: 'Audio', message: 'En cours...' });
+                try {
+                    const res = await adminFetch('/api/admin/ping/audio?url=' + encodeURIComponent(url));
+                    const data = await res.json();
+                    setPingResult({ type: 'Audio', ...data });
+                } catch (e) { setPingResult({ type: 'Audio', success: false, error: e.message }); }
+            };
 
-  function statusCard(label, value, state) {
-    var dot = state ? el('span', {'class': 'dot ' + state}) : null;
-    var val = el('div', {'class': 'value'});
-    if (dot) val.appendChild(dot);
-    val.appendChild(document.createTextNode(value));
-    return el('div', {'class': 'card'}, [el('div', {'class': 'label', text: label}), val]);
-  }
+            const doSearch = async () => {
+                try {
+                    const res = await fetch('/api/audius/search?query=' + encodeURIComponent(searchQuery));
+                    const data = await res.json();
+                    setSearchResults(data || []);
+                    setView('search');
+                } catch (e) { alert(e.message); }
+            };
 
-  async function loadStatus() {
-    var grid = document.getElementById('status-grid');
-    grid.innerHTML = '';
-    grid.appendChild(statusCard('Backend', 'Vérification…', 'warn'));
-    try {
-      var t0 = performance.now();
-      var r = await fetch('/api/status');
-      var ms = Math.round(performance.now() - t0);
-      var d = await r.json();
-      grid.innerHTML = '';
-      grid.appendChild(statusCard('Backend', r.ok ? 'En ligne (' + ms + ' ms)' : 'Erreur', r.ok ? 'ok' : 'ko'));
-      grid.appendChild(statusCard('Supabase', d.env && d.env.supabase ? 'Configuré' : 'Absent', d.env && d.env.supabase ? 'ok' : 'ko'));
-      grid.appendChild(statusCard('Audius', d.audiusReachable ? 'Joignable' : 'Indispo', d.audiusReachable ? 'ok' : 'ko'));
-      grid.appendChild(statusCard('Audius app_name', d.env ? d.env.audiusAppName : '—', null));
-      grid.appendChild(statusCard('Jamendo', d.env && d.env.jamendo ? 'Configuré' : 'Absent', d.env && d.env.jamendo ? 'ok' : 'warn'));
-      grid.appendChild(statusCard('Node', d.node || '—', null));
-      grid.appendChild(statusCard('Uptime', (d.uptimeSeconds || 0) + ' s', null));
-    } catch (e) {
-      grid.innerHTML = '';
-      grid.appendChild(statusCard('Backend', 'Injoignable', 'ko'));
-    }
-  }
+            const addToLibrary = async (track) => {
+                try {
+                    const res = await adminFetch('/api/admin/tracks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: track.id,
+                            title: track.title,
+                            artist: track.artist,
+                            cover_url: track.cover,
+                            audio_url: track.audioUrl,
+                            source: track.source,
+                            duration: track.duration
+                        })
+                    });
+                    const d = await res.json();
+                    if (d.success) alert('Ajouté !');
+                    else alert('Erreur: ' + d.error);
+                } catch (e) { alert(e.message); }
+            };
 
-  function playStream(url, title) {
-    var a = document.getElementById('audio');
-    a.src = url; a.play();
-    document.getElementById('now').textContent = '▶ ' + (title || url);
-  }
+            const loadLibrary = async () => {
+                try {
+                    const res = await fetch('/api/songs');
+                    const data = await res.json();
+                    setLibrary(data || []);
+                    setView('library');
+                } catch (e) { alert(e.message); }
+            };
 
-  function renderTracks(list, container) {
-    container.innerHTML = '';
-    if (!Array.isArray(list) || !list.length) {
-      container.appendChild(el('div', {'class': 'meta', text: 'Aucun résultat.'}));
-      return;
-    }
-    list.forEach(function (t) {
-      var img = el('img', {src: t.cover || '', alt: ''});
-      var btn = el('button', {text: '▶ Lire'});
-      btn.onclick = function () { playStream(t.audioUrl, (t.title || '') + ' — ' + (t.artist || '')); };
+            const loadProfiles = async () => {
+                try {
+                    const res = await adminFetch('/api/admin/profiles');
+                    const data = await res.json();
+                    setProfiles(data.data || []);
+                    setView('profiles');
+                } catch (e) { alert(e.message); }
+            };
 
-      var delBtn = el('button', {text: '🗑 Suppr', 'class': 'secondary', style: 'margin-left: 8px; border-color: var(--danger); color: var(--danger);'});
-      delBtn.onclick = async function() {
-        if(!confirm('Supprimer ce titre ?')) return;
-        try {
-          await fetch('/api/admin/tracks/' + t.id, {method: 'DELETE'});
-          doSongs(); // Refresh
-        } catch(e) { alert(e.message); }
-      };
+            const loadPlaylists = async () => {
+                try {
+                    const res = await adminFetch('/api/admin/playlists');
+                    const data = await res.json();
+                    setPlaylists(data.data || []);
+                    setView('playlists');
+                } catch (e) { alert(e.message); }
+            };
 
-      var info = el('div', {}, [
-        el('div', {'class': 't', text: t.title || '(sans titre)'}),
-        el('div', {'class': 'a', text: t.artist || ''}),
-        el('div', {'class': 'src', text: t.source || ''}),
-        el('div', {}, [btn, delBtn]),
-      ]);
-      container.appendChild(el('div', {'class': 'track'}, [img, info]));
-    });
-  }
+            const deleteTrack = async (id) => {
+                if (!confirm('Supprimer ce titre ?')) return;
+                try {
+                    await adminFetch('/api/admin/tracks/' + id, { method: 'DELETE' });
+                    loadLibrary();
+                } catch (e) { alert(e.message); }
+            };
 
-  async function fetchJson(path, metaEl) {
-    var t0 = performance.now();
-    var r = await fetch(path);
-    var ms = Math.round(performance.now() - t0);
-    var d = await r.json();
-    if (metaEl) { metaEl.textContent = 'HTTP ' + r.status + ' · ' + ms + ' ms · ' + path; }
-    return d;
-  }
+            const deletePlaylist = async (id) => {
+                if (!confirm('Supprimer cette playlist ?')) return;
+                try {
+                    await adminFetch('/api/admin/playlists/' + id, { method: 'DELETE' });
+                    loadPlaylists();
+                } catch (e) { alert(e.message); }
+            };
 
-  async function doSearch() {
-    var q = encodeURIComponent(document.getElementById('s-query').value || '');
-    var lim = document.getElementById('s-limit').value || 6;
-    var meta = document.getElementById('s-meta');
-    meta.textContent = 'Chargement…';
-    try {
-      var d = await fetchJson('/api/audius/search?query=' + q + '&limit=' + lim, meta);
-      renderTracks(d, document.getElementById('s-tracks'));
-    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
-  }
+            if (!isAuth) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center p-6">
+                        <div className="bg-[#16191f] border border-[#262b33] p-8 rounded-2xl w-full max-w-md shadow-2xl">
+                            <h1 className="text-2xl font-bold mb-2">Accès Admin</h1>
+                            <p className="text-gray-400 text-sm mb-6">Veuillez entrer votre clé d'administration pour continuer.</p>
+                            <input
+                                type="password"
+                                value={adminKey}
+                                onChange={(e) => setAdminKey(e.target.value)}
+                                className="w-full bg-[#0b1020] border border-[#262b33] rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-primary-orange"
+                                placeholder="Clé secrète"
+                            />
+                            <button
+                                onClick={checkAuth}
+                                className="w-full bg-primary-orange text-black font-bold py-3 rounded-xl hover:opacity-90 transition"
+                            >
+                                Se connecter
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
 
-  async function doTrending() {
-    var g = encodeURIComponent(document.getElementById('t-genre').value || '');
-    var lim = document.getElementById('t-limit').value || 6;
-    var meta = document.getElementById('t-meta');
-    meta.textContent = 'Chargement…';
-    var path = '/api/audius/trending?limit=' + lim + (g ? '&genre=' + g : '');
-    try {
-      var d = await fetchJson(path, meta);
-      renderTracks(d, document.getElementById('t-tracks'));
-    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
-  }
+            return (
+                <div className="min-h-screen flex flex-col">
+                    <header className="border-b border-[#262b33] px-6 py-4 flex items-center justify-between">
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight">AFRO <span className="primary-orange">SOUND</span> - Admin</h1>
+                            <p className="text-gray-500 text-xs mt-1">Panel de gestion & monitoring</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => { localStorage.removeItem('afrosound_admin_key'); setIsAuth(false); }} className="text-gray-500 text-xs hover:text-white mr-4">Déconnexion</button>
+                            <button onClick={loadStatus} className="bg-[#222831] border border-[#262b33] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#2c333d]">
+                                Rafraîchir
+                            </button>
+                        </div>
+                    </header>
 
-  async function doSongs() {
-    var meta = document.getElementById('db-meta');
-    var out = document.getElementById('db-out');
-    var list = document.getElementById('db-list');
-    meta.textContent = 'Chargement des titres…';
-    list.innerHTML = ''; out.style.display = 'none';
-    try {
-      var d = await fetchJson('/api/songs', meta);
-      renderTracks(d, list);
-    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
-  }
+                    <nav className="bg-[#16191f] border-b border-[#262b33] px-6 py-2 flex gap-4">
+                        <button onClick={() => setView('status')} className={"px-3 py-1 rounded-md text-sm " + (view === 'status' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Dashboard</button>
+                        <button onClick={loadLibrary} className={"px-3 py-1 rounded-md text-sm " + (view === 'library' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Bibliothèque</button>
+                        <button onClick={loadProfiles} className={"px-3 py-1 rounded-md text-sm " + (view === 'profiles' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Utilisateurs</button>
+                        <button onClick={loadPlaylists} className={"px-3 py-1 rounded-md text-sm " + (view === 'playlists' ? 'bg-primary-orange text-black' : 'text-gray-400')}>Playlists</button>
+                    </nav>
 
-  async function doAdminProfiles() {
-    var meta = document.getElementById('db-meta');
-    var out = document.getElementById('db-out');
-    var list = document.getElementById('db-list');
-    meta.textContent = 'Chargement des profils…';
-    list.innerHTML = ''; out.style.display = 'block';
-    try {
-      var d = await fetchJson('/api/admin/profiles', meta);
-      out.textContent = JSON.stringify(d, null, 2);
-    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
-  }
+                    <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+                        {view === 'status' && (
+                            <div>
+                                <h2 className="text-gray-500 text-xs uppercase font-bold tracking-widest mb-4">État du système</h2>
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                                    <StatusCard label="Backend" value={status ? "En ligne" : "Chargement..."} state={status ? "ok" : "warn"} />
+                                    <StatusCard label="Supabase" value={status?.env?.supabase ? "Configuré" : "Absent"} state={status?.env?.supabase ? "ok" : "ko"} />
+                                    <StatusCard label="Audius" value={status?.audiusReachable ? "Joignable" : "Indisponible"} state={status?.audiusReachable ? "ok" : "ko"} />
+                                    <StatusCard label="Node Version" value={status?.node || "---"} />
+                                </div>
 
-  async function doAdminPlaylists() {
-    var meta = document.getElementById('db-meta');
-    var out = document.getElementById('db-out');
-    var list = document.getElementById('db-list');
-    meta.textContent = 'Chargement des playlists…';
-    list.innerHTML = ''; out.style.display = 'block';
-    try {
-      var d = await fetchJson('/api/admin/playlists', meta);
-      out.textContent = JSON.stringify(d, null, 2);
-    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
-  }
+                                <h2 className="text-gray-500 text-xs uppercase font-bold tracking-widest mb-4">Diagnostics</h2>
+                                <div className="bg-[#16191f] border border-[#262b33] rounded-xl p-6 mb-8">
+                                    <div className="flex flex-wrap gap-4 items-end">
+                                        <div className="flex-1 min-w-[200px]">
+                                            <label className="block text-xs text-gray-500 mb-2">Ping Supabase</label>
+                                            <button onClick={pingSupabase} className="w-full bg-primary-orange text-black font-bold py-2 rounded-lg">Tester la DB</button>
+                                        </div>
+                                        <div className="flex-[2] min-w-[300px]">
+                                            <label className="block text-xs text-gray-500 mb-2">Ping Audio</label>
+                                            <div className="flex gap-2">
+                                                <input id="audio-url-input" type="text" className="flex-1 bg-[#0b1020] border border-[#262b33] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-orange" placeholder="URL du son..." />
+                                                <button onClick={() => pingAudio(document.getElementById('audio-url-input').value)} className="bg-white text-black font-bold px-4 py-2 rounded-lg">Tester</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {pingResult && (
+                                        <div className="mt-4 p-4 bg-[#0b1020] border border-[#262b33] rounded-lg">
+                                            <div className="text-xs font-bold text-gray-400 mb-2">{pingResult.type} Result:</div>
+                                            <pre className="text-xs overflow-auto">{JSON.stringify(pingResult, null, 2)}</pre>
+                                        </div>
+                                    )}
+                                </div>
 
-  async function doRaw() {
-    var custom = document.getElementById('r-custom').value.trim();
-    var path = custom || document.getElementById('r-path').value;
-    var meta = document.getElementById('r-meta');
-    meta.textContent = 'Chargement…';
-    try {
-      var d = await fetchJson(path, meta);
-      document.getElementById('r-out').textContent = JSON.stringify(d, null, 2);
-    } catch (e) { meta.textContent = 'Erreur: ' + e.message; }
-  }
+                                <h2 className="text-gray-500 text-xs uppercase font-bold tracking-widest mb-4">Importer des morceaux</h2>
+                                <div className="bg-[#16191f] border border-[#262b33] rounded-xl p-6">
+                                    <div className="flex gap-2">
+                                        <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} type="text" className="flex-1 bg-[#0b1020] border border-[#262b33] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-orange" placeholder="Artiste, titre..." />
+                                        <button onClick={doSearch} className="bg-primary-orange text-black font-bold px-6 py-2 rounded-lg">Rechercher</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-  loadStatus();
-</script>
+                        {view === 'search' && (
+                            <div>
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-xl font-bold">Résultats Audius</h2>
+                                    <button onClick={() => setView('status')} className="text-sm text-gray-400 hover:text-white">Retour</button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {searchResults.map(t => (
+                                        <div key={t.id} className="bg-[#16191f] border border-[#262b33] p-4 rounded-xl flex gap-4">
+                                            <img src={t.cover} className="w-16 h-16 rounded-lg object-cover bg-gray-800" alt="" />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-semibold truncate">{t.title}</div>
+                                                <div className="text-sm text-gray-400 truncate">{t.artist}</div>
+                                                <button onClick={() => addToLibrary(t)} className="mt-2 bg-primary-orange/20 text-primary-orange text-xs font-bold px-3 py-1 rounded-md border border-primary-orange/50 hover:bg-primary-orange/30">➕ Ajouter</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'library' && (
+                            <div>
+                                <h2 className="text-xl font-bold mb-6">Bibliothèque Publique ({library.length})</h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left border-b border-[#262b33]">
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Titre</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Artiste</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Source</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {library.map(t => (
+                                                <tr key={t.id} className="border-b border-[#262b33] hover:bg-[#16191f]">
+                                                    <td className="py-4 font-medium">{t.title}</td>
+                                                    <td className="py-4 text-gray-400">{t.artist}</td>
+                                                    <td className="py-4"><span className="bg-gray-800 px-2 py-0.5 rounded text-[10px] uppercase font-bold text-gray-400">{t.source}</span></td>
+                                                    <td className="py-4">
+                                                        <button onClick={() => deleteTrack(t.id)} className="text-red-500 hover:text-red-400 text-sm">Supprimer</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'profiles' && (
+                            <div>
+                                <h2 className="text-xl font-bold mb-6">Utilisateurs ({profiles.length})</h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left border-b border-[#262b33]">
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">ID</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Username</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Inscrit le</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {profiles.map(p => (
+                                                <tr key={p.id} className="border-b border-[#262b33] hover:bg-[#16191f]">
+                                                    <td className="py-4 text-xs font-mono text-gray-500">{p.id}</td>
+                                                    <td className="py-4 font-medium">{p.username || '---'}</td>
+                                                    <td className="py-4 text-gray-400">{new Date(p.created_at).toLocaleDateString()}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'playlists' && (
+                            <div>
+                                <h2 className="text-xl font-bold mb-6">Playlists ({playlists.length})</h2>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr className="text-left border-b border-[#262b33]">
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Nom</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Propriétaire</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Visibilité</th>
+                                                <th className="pb-3 text-xs text-gray-500 uppercase">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {playlists.map(p => (
+                                                <tr key={p.id} className="border-b border-[#262b33] hover:bg-[#16191f]">
+                                                    <td className="py-4 font-medium">{p.name}</td>
+                                                    <td className="py-4 text-gray-400">{p.profiles?.username || p.user_id}</td>
+                                                    <td className="py-4">{p.is_public ? <span className="text-green-500 text-xs">Publique</span> : <span className="text-gray-500 text-xs">Privée</span>}</td>
+                                                    <td className="py-4">
+                                                        <button onClick={() => deletePlaylist(p.id)} className="text-red-500 hover:text-red-400 text-sm">Supprimer</button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    <footer className="p-6 text-center text-gray-600 text-xs border-t border-[#262b33]">
+                        AFRO SOUND &copy; 2026 - Panel servi par le backend Vercel
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>`;
