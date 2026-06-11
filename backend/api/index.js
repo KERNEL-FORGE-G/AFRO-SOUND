@@ -161,6 +161,24 @@ app.get('/api/songs', async (req, res) => {
   }
 });
 
+app.post('/api/tracks/upsert', async (req, res) => {
+  if (!supabase) return res.status(503).json({ success: false, error: 'Supabase indisponible' });
+  try {
+    const { id, title, artist, cover_url, audio_url, source, duration } = req.body;
+    if (!id || !title) return res.status(400).json({ success: false, error: 'ID et Titre requis' });
+
+    const { data, error } = await supabase
+      .from('tracks')
+      .upsert([{ id, title, artist, cover_url, audio_url, source, duration }], { onConflict: 'id' })
+      .select();
+
+    if (error) throw error;
+    res.json({ success: true, data: data[0] });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
 // --- ADMIN ROUTES (Protected) ---
 
 app.get('/api/admin/ping/supabase', auth, async (req, res) => {
