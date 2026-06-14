@@ -5,7 +5,7 @@
  *  - iTunes API   → previews 30s, catalogue Apple Music
  */
 
-import {getBaseUrl} from '../config';
+import {getApiUrl} from '../config';
 
 const DEEZER_BASE = 'https://api.deezer.com';
 const ITUNES_BASE = 'https://itunes.apple.com';
@@ -13,9 +13,8 @@ const ITUNES_BASE = 'https://itunes.apple.com';
 /** Recherche via le nouveau backend (Jamendo) */
 export const searchJamendo = async (query, limit = 10) => {
   try {
-    const baseUrl = getBaseUrl();
     const res = await fetch(
-      `${baseUrl}/api/jamendo/search?query=${encodeURIComponent(
+      `${getApiUrl('/api/jamendo/search')}?query=${encodeURIComponent(
         query,
       )}&limit=${limit}`,
     );
@@ -31,8 +30,7 @@ export const searchJamendo = async (query, limit = 10) => {
  */
 export const upsertTrack = async track => {
   try {
-    const baseUrl = getBaseUrl();
-    const res = await fetch(`${baseUrl}/api/tracks/upsert`, {
+    const res = await fetch(getApiUrl('/api/tracks/upsert'), {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
@@ -64,7 +62,9 @@ export const addTrackToPlaylist = async (playlistId, trackId) => {
       .upsert([{playlist_id: playlistId, track_id: trackId}], {
         onConflict: 'playlist_id,track_id',
       });
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return {success: true};
   } catch (e) {
     console.warn('[addTrackToPlaylist] Erreur:', e.message);
@@ -75,9 +75,8 @@ export const addTrackToPlaylist = async (playlistId, trackId) => {
 /** Recherche Audius (titres complets en streaming) via le backend */
 export const searchAudius = async (query, limit = 10) => {
   try {
-    const baseUrl = getBaseUrl();
     const res = await fetch(
-      `${baseUrl}/api/audius/search?query=${encodeURIComponent(
+      `${getApiUrl('/api/audius/search')}?query=${encodeURIComponent(
         query,
       )}&limit=${limit}`,
     );
@@ -92,8 +91,7 @@ export const searchAudius = async (query, limit = 10) => {
 /** Tendances Audius (genre optionnel, ex. "Afrobeats") via le backend */
 export const getAudiusTrending = async (limit = 20, genre = '') => {
   try {
-    const baseUrl = getBaseUrl();
-    const url = `${baseUrl}/api/audius/trending?limit=${limit}${
+    const url = `${getApiUrl('/api/audius/trending')}?limit=${limit}${
       genre ? `&genre=${encodeURIComponent(genre)}` : ''
     }`;
     const res = await fetch(url);
@@ -296,7 +294,14 @@ export const searchAll = async (query, limit = 10, source = 'all') => {
     }
   });
 
-  return combined;
+  const uniqueById = new Map();
+  combined.forEach(track => {
+    if (!uniqueById.has(track.id)) {
+      uniqueById.set(track.id, track);
+    }
+  });
+
+  return Array.from(uniqueById.values());
 };
 
 /**
@@ -304,8 +309,7 @@ export const searchAll = async (query, limit = 10, source = 'all') => {
  */
 export const getSupabaseSongs = async () => {
   try {
-    const baseUrl = getBaseUrl();
-    const res = await fetch(`${baseUrl}/api/songs`);
+    const res = await fetch(getApiUrl('/api/songs'));
     return await res.json();
   } catch (e) {
     console.warn('[Supabase songs] Erreur:', e.message);

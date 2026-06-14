@@ -4,6 +4,7 @@ import {
   addTrackToGroup,
   removeTrackFromGroup,
   addMemberToGroup,
+  updateGroupPlaylist,
   markPlaylistSynced,
 } from '../store/slices/playlistsSlice';
 
@@ -11,8 +12,8 @@ export const useGroupPlaylist = () => {
   const dispatch = useDispatch();
   const groupPlaylists = useSelector(state => state.playlists.groupPlaylists);
 
-  const createPlaylist = (name, ownerId, members = []) => {
-    dispatch(createGroupPlaylist({name, ownerId, members}));
+  const createPlaylist = (name, ownerId, members = [], options = {}) => {
+    dispatch(createGroupPlaylist({name, ownerId, members, ...options}));
   };
 
   const addTrack = (playlistId, track) => {
@@ -27,6 +28,10 @@ export const useGroupPlaylist = () => {
     dispatch(addMemberToGroup({playlistId, memberId}));
   };
 
+  const updatePlaylist = (playlistId, updates) => {
+    dispatch(updateGroupPlaylist({playlistId, updates}));
+  };
+
   const markSynced = playlistId => {
     dispatch(markPlaylistSynced({playlistId}));
   };
@@ -37,6 +42,7 @@ export const useGroupPlaylist = () => {
     addTrack,
     removeTrack,
     addMember,
+    updatePlaylist,
     markSynced,
   };
 };
