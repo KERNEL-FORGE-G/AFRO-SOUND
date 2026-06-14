@@ -1,7 +1,7 @@
 import React from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {Colors} from '../theme';
+import {Colors, Radius, Shadows} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   usePlayer,
@@ -26,16 +26,22 @@ export default function PlayerBar() {
       style={styles.container}
       onPress={() => navigation.navigate('NowPlaying', {track: currentTrack})}
       activeOpacity={0.9}>
+      <View style={styles.waveAccent} />
       <View style={styles.info}>
         <Image
           source={
-            currentTrack.artwork
-              ? {uri: currentTrack.artwork}
+            currentTrack.artwork || currentTrack.cover || currentTrack.cover_url
+              ? {
+                  uri:
+                    currentTrack.artwork ||
+                    currentTrack.cover ||
+                    currentTrack.cover_url,
+                }
               : require('../../logo.png')
           }
           style={styles.cover}
         />
-        <View style={{flex: 1}}>
+        <View style={styles.meta}>
           <Text style={styles.title} numberOfLines={1}>
             {currentTrack.title}
           </Text>
@@ -44,39 +50,80 @@ export default function PlayerBar() {
           </Text>
         </View>
       </View>
-      <TouchableOpacity
-        style={styles.playButton}
-        onPress={() => togglePlayback(playbackState)}>
-        <Ionicons
-          name={isPlaying ? 'pause' : 'play'}
-          size={22}
-          color={Colors.background}
-        />
-      </TouchableOpacity>
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() =>
+            navigation.navigate('NowPlaying', {track: currentTrack})
+          }>
+          <Ionicons
+            name="musical-notes-outline"
+            size={18}
+            color={Colors.text}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.playButton}
+          onPress={() => togglePlayback(playbackState)}>
+          <Ionicons
+            name={isPlaying ? 'pause' : 'play'}
+            size={22}
+            color={Colors.background}
+          />
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.card,
-    borderTopWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: 16,
+    backgroundColor: Colors.backgroundElevated,
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+    marginHorizontal: 12,
+    marginBottom: 10,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    ...Shadows.soft,
+  },
+  waveAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: Colors.primary,
   },
   info: {flexDirection: 'row', alignItems: 'center', flex: 1},
+  meta: {flex: 1},
   cover: {
     width: 46,
     height: 46,
     borderRadius: 8,
     marginRight: 12,
   },
-  title: {color: Colors.text, fontSize: 14, fontWeight: '600'},
-  artist: {color: Colors.muted, fontSize: 12, marginTop: 2},
+  title: {color: Colors.text, fontSize: 14, fontWeight: '700'},
+  artist: {color: Colors.textSoft, fontSize: 12, marginTop: 2},
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 14,
+  },
+  iconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
   playButton: {
     width: 46,
     height: 46,

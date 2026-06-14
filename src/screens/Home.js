@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Animated,
 } from 'react-native';
-import theme, {Colors} from '../theme';
+import theme, {Colors, Radius, Shadows, Spacing, Typography} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {getHomeData} from '../services/musicApi';
 import {usePlayer} from '../context/PlayerContext';
+import {getServerTargets} from '../config';
 
 export default function Home({navigation}) {
   const [sections, setSections] = useState({
@@ -24,6 +24,7 @@ export default function Home({navigation}) {
   });
   const [isLoading, setIsLoading] = useState(true);
   const {playTrack} = usePlayer();
+  const serverTargets = useMemo(() => getServerTargets(), []);
 
   useEffect(() => {
     fetchData();
@@ -46,156 +47,180 @@ export default function Home({navigation}) {
     navigation.navigate('NowPlaying', {track});
   };
 
-  const RecentCard = ({item, index, queue}) => {
-    const anim = useRef(new Animated.Value(0)).current;
-    useEffect(() => {
-      Animated.spring(anim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        delay: index * 100,
-        useNativeDriver: true,
-      }).start();
-    }, [index]);
+  const RecentCard = ({item, queue}) => (
+    <TouchableOpacity
+      style={styles.recentCard}
+      activeOpacity={0.86}
+      onPress={() => handlePlay(item, queue)}>
+      <Image
+        source={
+          item.cover
+            ? {uri: item.cover}
+            : item.cover_url
+            ? {uri: item.cover_url}
+            : require('../../logo.png')
+        }
+        style={styles.recentImage}
+      />
+      <View style={styles.recentMeta}>
+        <Text style={styles.recentTitle} numberOfLines={1}>
+          {item.title}
+        </Text>
+        <Text style={styles.recentArtist} numberOfLines={1}>
+          {item.artist || item.artist_name || 'Artiste inconnu'}
+        </Text>
+      </View>
+      <View style={styles.recentPlay}>
+        <Ionicons name="play" size={16} color={Colors.background} />
+      </View>
+    </TouchableOpacity>
+  );
 
-    return (
-      <Animated.View
-        style={[
-          styles.recentCard,
-          {
-            opacity: anim,
-            transform: [
-              {
-                scale: anim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.8, 1],
-                }),
-              },
-            ],
-          },
-        ]}>
-        <TouchableOpacity
-          style={{flexDirection: 'row', alignItems: 'center', flex: 1}}
-          activeOpacity={0.8}
-          onPress={() => handlePlay(item, queue)}>
-          <Image
-            source={
-              item.cover
-                ? {uri: item.cover}
-                : item.cover_url
-                ? {uri: item.cover_url}
-                : require('../../logo.png')
-            }
-            style={styles.recentImage}
-          />
-          <Text style={styles.recentTitle} numberOfLines={2}>
-            {item.title}
+  const TrackCard = ({item, queue}) => (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={styles.card}
+      onPress={() => handlePlay(item, queue)}>
+      <View>
+        <Image
+          source={
+            item.cover
+              ? {uri: item.cover}
+              : item.cover_url
+              ? {uri: item.cover_url}
+              : require('../../logo.png')
+          }
+          style={styles.cardImage}
+        />
+        <View style={styles.sourceBadge}>
+          <Text style={styles.sourceBadgeText}>
+            {(item.source || 'local').toUpperCase()}
           </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
-
-  const TrackCard = ({p, index, queue}) => {
-    const anim = useRef(new Animated.Value(0)).current;
-    useEffect(() => {
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 500,
-        delay: index * 50,
-        useNativeDriver: true,
-      }).start();
-    }, [index]);
-
-    return (
-      <Animated.View
-        style={[
-          styles.card,
-          {
-            opacity: anim,
-            transform: [
-              {
-                translateX: anim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [20, 0],
-                }),
-              },
-            ],
-          },
-        ]}>
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => handlePlay(p, queue)}>
-          <View>
-            <Image
-              source={
-                p.cover
-                  ? {uri: p.cover}
-                  : p.cover_url
-                  ? {uri: p.cover_url}
-                  : require('../../logo.png')
-              }
-              style={styles.cardImage}
-            />
-            <View
-              style={[
-                styles.sourceBadge,
-                p.source === 'itunes' && styles.itunesBadge,
-                p.source === 'jamendo' && styles.jamendoBadge,
-              ]}>
-              <Text style={styles.sourceBadgeText}>
-                {p.source === 'itunes'
-                  ? 'iTunes'
-                  : p.source === 'deezer'
-                  ? 'Deezer'
-                  : p.source === 'jamendo'
-                  ? 'Jamendo'
-                  : p.source === 'audius'
-                  ? 'Audius'
-                  : 'Local'}
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {p.title}
-          </Text>
-          <Text style={styles.cardArtist} numberOfLines={1}>
-            {p.artist || p.artist_name || 'Artiste inconnu'}
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
+        </View>
+      </View>
+      <Text style={styles.cardTitle} numberOfLines={1}>
+        {item.title}
+      </Text>
+      <Text style={styles.cardArtist} numberOfLines={1}>
+        {item.artist || item.artist_name || 'Artiste inconnu'}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
     <View style={[theme.container, styles.mainContainer]}>
-      <ScrollView contentContainerStyle={{paddingBottom: 140}}>
-        {/* Header */}
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Profile')}
-                activeOpacity={0.8}>
-                <View style={styles.profilePic} />
-              </TouchableOpacity>
+            <View>
+              <Text style={styles.kicker}>Afro sonic experience</Text>
               <Text style={styles.greeting}>AFRO SOUND</Text>
             </View>
-            <TouchableOpacity onPress={fetchData} activeOpacity={0.8}>
+            <TouchableOpacity
+              onPress={fetchData}
+              activeOpacity={0.8}
+              style={styles.refreshButton}>
               <Ionicons
                 name="refresh-outline"
-                size={24}
+                size={20}
                 color={Colors.primary}
               />
             </TouchableOpacity>
           </View>
-          <View style={styles.filtersRow}>
-            <View style={styles.filterPill}>
-              <Text style={styles.filterText}>Deezer</Text>
+
+          <View style={styles.heroCard}>
+            <Image
+              source={require('../../assets/2.jpg')}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+            <View style={styles.heroOverlay} />
+            <View style={styles.heroContent}>
+              <View style={styles.heroBadge}>
+                <Ionicons
+                  name="radio-outline"
+                  size={14}
+                  color={Colors.primary}
+                />
+                <Text style={styles.heroBadgeText}>
+                  {__DEV__ ? 'Serveur local actif' : 'Cloud Vercel actif'}
+                </Text>
+              </View>
+              <Text style={styles.heroTitle}>
+                Une interface premium pour explorer, jouer et partager la
+                musique.
+              </Text>
+              <Text style={styles.heroSubtitle}>
+                Catalogue multi-source, playlists collaboratives et connexion
+                backend conservee.
+              </Text>
+              <View style={styles.heroActions}>
+                <TouchableOpacity
+                  style={styles.heroPrimaryAction}
+                  onPress={() => navigation.navigate('Rechercher')}>
+                  <Text style={styles.heroPrimaryText}>Explorer</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.heroSecondaryAction}
+                  onPress={() => navigation.navigate('Créer')}>
+                  <Text style={styles.heroSecondaryText}>Creer</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={[styles.filterPill, {backgroundColor: '#1D1A29'}]}>
-              <Text style={styles.filterText}>iTunes</Text>
+          </View>
+
+          <View style={styles.statusGrid}>
+            <View style={styles.statusCard}>
+              <Text style={styles.statusValue}>
+                {sections.afrobeats.length}
+              </Text>
+              <Text style={styles.statusLabel}>Afrobeats</Text>
             </View>
+            <View style={styles.statusCard}>
+              <Text style={styles.statusValue}>
+                {sections.audiusTrending.length}
+              </Text>
+              <Text style={styles.statusLabel}>Audius</Text>
+            </View>
+            <View style={styles.statusCardWide}>
+              <Text style={styles.statusWideTitle}>Connexion</Text>
+              <Text style={styles.statusWideValue} numberOfLines={1}>
+                {serverTargets.active}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.quickActions}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('Bibliothèque')}>
+              <Ionicons
+                name="library-outline"
+                size={18}
+                color={Colors.primary}
+              />
+              <Text style={styles.quickActionText}>Bibliotheque</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('GroupPlaylist')}>
+              <Ionicons
+                name="people-outline"
+                size={18}
+                color={Colors.primary}
+              />
+              <Text style={styles.quickActionText}>Partage</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('Profile')}>
+              <Ionicons
+                name="sparkles-outline"
+                size={18}
+                color={Colors.primary}
+              />
+              <Text style={styles.quickActionText}>Profil</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -203,85 +228,127 @@ export default function Home({navigation}) {
           <ActivityIndicator
             size="large"
             color={Colors.primary}
-            style={{marginTop: 80}}
+            style={styles.loader}
           />
         ) : (
           <>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Continuez l'ecoute</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('NowPlaying')}
+                activeOpacity={0.8}>
+                <Text style={styles.sectionLink}>Lecteur</Text>
+              </TouchableOpacity>
+            </View>
             <View style={styles.recentGrid}>
-              {Array.isArray(sections.recentTracks) && sections.recentTracks
-                .slice(0, 6)
-                .map((item, i) => (
-                  <RecentCard key={item.id || i} item={item} index={i} queue={sections.recentTracks} />
-                ))}
+              {Array.isArray(sections.recentTracks) &&
+                sections.recentTracks
+                  .slice(0, 4)
+                  .map((item, index) => (
+                    <RecentCard
+                      key={item.id || index}
+                      item={item}
+                      queue={sections.recentTracks}
+                    />
+                  ))}
             </View>
 
-            {Array.isArray(sections.customSongs) && sections.customSongs.length > 0 && (
-              <>
-                <Text style={[styles.sectionTitle, {marginTop: 28}]}>
-                  Vos titres (Supabase)
-                </Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-                  {sections.customSongs.map((p, i) => (
-                    <TrackCard key={p.id || i} p={p} index={i} queue={sections.customSongs} />
-                  ))}
-                </ScrollView>
-              </>
-            )}
+            {Array.isArray(sections.customSongs) &&
+              sections.customSongs.length > 0 && (
+                <>
+                  <View style={styles.sectionHeaderRow}>
+                    <Text style={styles.sectionTitle}>Bibliotheque maison</Text>
+                    <Text style={styles.sectionMeta}>Supabase</Text>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalList}>
+                    {sections.customSongs.map((item, index) => (
+                      <TrackCard
+                        key={item.id || index}
+                        item={item}
+                        queue={sections.customSongs}
+                      />
+                    ))}
+                  </ScrollView>
+                </>
+              )}
 
-            <Text style={styles.sectionTitle}>Afrobeats</Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Radar afrobeats</Text>
+              <Text style={styles.sectionMeta}>Top picks</Text>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-              {Array.isArray(sections.afrobeats) && sections.afrobeats.map((p, i) => (
-                <TrackCard key={p.id || i} p={p} index={i} queue={sections.afrobeats} />
-              ))}
+              contentContainerStyle={styles.horizontalList}>
+              {Array.isArray(sections.afrobeats) &&
+                sections.afrobeats.map((item, index) => (
+                  <TrackCard
+                    key={item.id || index}
+                    item={item}
+                    queue={sections.afrobeats}
+                  />
+                ))}
             </ScrollView>
 
-            <Text style={[styles.sectionTitle, {marginTop: 28}]}>
-              Top Mondial
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-              {Array.isArray(sections.topGlobal) && sections.topGlobal.map((p, i) => (
-                <TrackCard key={p.id || i} p={p} index={i} queue={sections.topGlobal} />
-              ))}
-            </ScrollView>
-
-            <View style={styles.bannerContainer}>
-              <Image
-                source={require('../../assets/2.jpg')}
-                style={styles.bannerImage}
-                resizeMode="cover"
-                blurRadius={4}
-              />
-              <View style={styles.bannerOverlay}>
-                <Text style={styles.bannerLabel}>Découverte</Text>
-                <Text style={styles.bannerHeadline}>
-                  Les meilleures pistes du moment
+            <View style={styles.featureStrip}>
+              <View style={styles.featureCopy}>
+                <Text style={styles.featureLabel}>Mode collaboratif</Text>
+                <Text style={styles.featureTitle}>
+                  Construisez des playlists partagees prêtes a synchroniser.
                 </Text>
-                <Text style={styles.bannerNote}>
-                  Explore les nouveautés Afrobeats et iTunes dans une ambiance
-                  chaleureuse.
+                <Text style={styles.featureDescription}>
+                  Ajoutez des membres, centralisez les titres et gardez la trace
+                  des changements hors ligne.
                 </Text>
               </View>
+              <TouchableOpacity
+                style={styles.featureButton}
+                onPress={() => navigation.navigate('GroupPlaylist')}>
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color={Colors.background}
+                />
+              </TouchableOpacity>
             </View>
 
-            <Text style={[styles.sectionTitle, {marginTop: 28}]}>
-              Tendances Audius
-            </Text>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Top mondial</Text>
+              <Text style={styles.sectionMeta}>Deezer</Text>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{paddingLeft: 16, paddingRight: 8}}>
-              {Array.isArray(sections.audiusTrending) && sections.audiusTrending.map((p, i) => (
-                <TrackCard key={p.id || i} p={p} index={i} queue={sections.audiusTrending} />
-              ))}
+              contentContainerStyle={styles.horizontalList}>
+              {Array.isArray(sections.topGlobal) &&
+                sections.topGlobal.map((item, index) => (
+                  <TrackCard
+                    key={item.id || index}
+                    item={item}
+                    queue={sections.topGlobal}
+                  />
+                ))}
+            </ScrollView>
+
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Tendances audius</Text>
+              <Text style={styles.sectionMeta}>Streaming</Text>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}>
+              {Array.isArray(sections.audiusTrending) &&
+                sections.audiusTrending.map((item, index) => (
+                  <TrackCard
+                    key={item.id || index}
+                    item={item}
+                    queue={sections.audiusTrending}
+                  />
+                ))}
             </ScrollView>
           </>
         )}
@@ -292,118 +359,339 @@ export default function Home({navigation}) {
 
 const styles = StyleSheet.create({
   mainContainer: {flex: 1, backgroundColor: Colors.background},
-  header: {paddingHorizontal: 16, paddingTop: 40, paddingBottom: 16},
+  content: {
+    paddingBottom: 150,
+  },
+  header: {
+    paddingHorizontal: Spacing.md,
+    paddingTop: 30,
+  },
   headerTop: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: Spacing.lg,
   },
-  profilePic: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.surface,
-    marginRight: 12,
+  kicker: {
+    color: Colors.primary,
+    fontSize: Typography.caption,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 6,
+    fontWeight: '700',
   },
   greeting: {
     color: Colors.text,
-    fontSize: 22,
-    fontWeight: 'bold',
-    letterSpacing: -0.5,
+    fontSize: Typography.hero,
+    fontWeight: '800',
+    letterSpacing: -0.8,
   },
-  filtersRow: {flexDirection: 'row'},
-  filterPill: {
+  refreshButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
     backgroundColor: Colors.surface,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  filterText: {color: Colors.text, fontSize: 13, fontWeight: '500'},
-  recentGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 12,
-    justifyContent: 'space-between',
-  },
-  recentCard: {
-    width: '48%',
+  heroCard: {
+    minHeight: 250,
+    borderRadius: Radius.xl,
+    overflow: 'hidden',
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+    ...Shadows.soft,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(8, 8, 15, 0.55)',
+  },
+  heroContent: {
+    padding: Spacing.lg,
+    justifyContent: 'flex-end',
+    flex: 1,
+  },
+  heroBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 4,
-    marginBottom: 8,
-    overflow: 'hidden',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(9, 11, 16, 0.68)',
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(231, 165, 59, 0.35)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 14,
   },
-  recentImage: {width: 56, height: 56},
-  recentTitle: {
-    flex: 1,
+  heroBadgeText: {
     color: Colors.text,
     fontSize: 12,
-    fontWeight: '600',
-    paddingHorizontal: 8,
+    fontWeight: '700',
+    marginLeft: 8,
   },
-  sectionTitle: {
+  heroTitle: {
     color: Colors.text,
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 16,
-    marginTop: 24,
-    marginBottom: 16,
-    letterSpacing: -0.5,
+    fontSize: 25,
+    lineHeight: 31,
+    fontWeight: '800',
+    marginBottom: 10,
+    maxWidth: '90%',
   },
-  card: {width: 150, marginRight: 16, position: 'relative'},
-  cardImage: {width: 150, height: 150, borderRadius: 16},
-  cardTitle: {
+  heroSubtitle: {
+    color: Colors.textSoft,
+    fontSize: 14,
+    lineHeight: 22,
+    maxWidth: '92%',
+  },
+  heroActions: {
+    flexDirection: 'row',
+    marginTop: 18,
+  },
+  heroPrimaryAction: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    marginRight: 10,
+  },
+  heroPrimaryText: {
+    color: Colors.background,
+    fontWeight: '800',
+  },
+  heroSecondaryAction: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  heroSecondaryText: {
     color: Colors.text,
-    marginTop: 10,
-    fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '700',
   },
-  cardArtist: {color: Colors.muted, marginTop: 2, fontSize: 12},
-  sourceBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  statusGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: Spacing.md,
+    justifyContent: 'space-between',
   },
-  itunesBadge: {backgroundColor: 'rgba(29,26,41,0.85)'},
-  jamendoBadge: {backgroundColor: 'rgba(255,51,51,0.85)'},
-  sourceBadgeText: {fontSize: 12},
-  bannerContainer: {
-    marginHorizontal: 16,
-    marginTop: 28,
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  bannerImage: {width: '100%', height: 140},
-  bannerOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(10, 20, 10, 0.35)',
+  statusCard: {
+    width: '30%',
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
     padding: 16,
-    justifyContent: 'flex-end',
   },
-  bannerLabel: {
+  statusCardWide: {
+    width: '36%',
+    backgroundColor: Colors.surfaceAccent,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(231, 165, 59, 0.24)',
+    padding: 16,
+  },
+  statusValue: {
+    color: Colors.text,
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 6,
+  },
+  statusLabel: {
+    color: Colors.textSoft,
+    fontSize: 12,
+  },
+  statusWideTitle: {
     color: Colors.primary,
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1,
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: 8,
   },
-  bannerHeadline: {
+  statusWideValue: {
     color: Colors.text,
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 4,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: '600',
   },
-  bannerNote: {color: Colors.muted, fontSize: 12, lineHeight: 18},
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: Spacing.md,
+  },
+  quickAction: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    marginRight: 10,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    marginTop: 28,
+    marginBottom: 14,
+  },
+  sectionTitle: {
+    color: Colors.text,
+    fontSize: Typography.section,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  sectionLink: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  sectionMeta: {
+    color: Colors.textSoft,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  recentGrid: {
+    paddingHorizontal: Spacing.md,
+  },
+  recentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.card,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 10,
+    marginBottom: 10,
+  },
+  recentImage: {
+    width: 58,
+    height: 58,
+    borderRadius: 14,
+  },
+  recentMeta: {
+    flex: 1,
+    marginHorizontal: 12,
+  },
+  recentTitle: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  recentArtist: {
+    color: Colors.textSoft,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  recentPlay: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  horizontalList: {
+    paddingLeft: Spacing.md,
+    paddingRight: 4,
+  },
+  card: {
+    width: 170,
+    marginRight: 14,
+  },
+  cardImage: {
+    width: 170,
+    height: 170,
+    borderRadius: Radius.lg,
+    marginBottom: 10,
+  },
+  cardTitle: {
+    color: Colors.text,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  cardArtist: {
+    color: Colors.textSoft,
+    fontSize: 12,
+    marginTop: 4,
+  },
+  sourceBadge: {
+    position: 'absolute',
+    left: 10,
+    bottom: 10,
+    backgroundColor: Colors.overlay,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  sourceBadgeText: {
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.7,
+  },
+  featureStrip: {
+    marginTop: 28,
+    marginHorizontal: Spacing.md,
+    backgroundColor: Colors.surfaceAccent,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(231, 165, 59, 0.2)',
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  featureCopy: {
+    flex: 1,
+    marginRight: 16,
+  },
+  featureLabel: {
+    color: Colors.primary,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    fontWeight: '800',
+    letterSpacing: 1.1,
+    marginBottom: 10,
+  },
+  featureTitle: {
+    color: Colors.text,
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  featureDescription: {
+    color: Colors.textSoft,
+    fontSize: 13,
+    lineHeight: 21,
+  },
+  featureButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionText: {
+    color: Colors.text,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  loader: {
+    marginTop: 90,
+  },
 });

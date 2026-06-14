@@ -1,6 +1,6 @@
 import React from 'react';
 import {View} from 'react-native';
-import {NavigationContainer} from '@react-navigation/native';
+import {NavigationContainer, DefaultTheme} from '@react-navigation/native';
 import {createStackNavigator} from '@react-navigation/stack';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -20,26 +20,52 @@ import CreatePlaylist from '../screens/CreatePlaylist';
 import Login from '../screens/Login';
 import GroupPlaylist from '../screens/GroupPlaylist';
 import Profile from '../screens/Profile';
-import {Colors} from '../theme';
+import {Colors, Radius, Shadows} from '../theme';
 import useAuth from '../hooks/useAuth';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: Colors.background,
+    card: Colors.card,
+    primary: Colors.primary,
+    text: Colors.text,
+    border: Colors.border,
+    notification: Colors.accent,
+  },
+};
+
 function MainTabs() {
   return (
-    <View style={{flex: 1, backgroundColor: Colors.background}}>
+    <View style={styles.shell}>
       <Tab.Navigator
         screenOptions={({route}) => ({
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: Colors.background,
-            borderTopColor: Colors.border,
-            height: 60,
-            paddingBottom: 8,
+            position: 'absolute',
+            left: 12,
+            right: 12,
+            bottom: 12,
+            backgroundColor: Colors.backgroundElevated,
+            borderTopColor: Colors.borderStrong,
+            borderTopWidth: 1,
+            height: 72,
+            paddingBottom: 10,
+            paddingTop: 10,
+            borderRadius: Radius.xl,
+            ...Shadows.soft,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '700',
+            marginBottom: 4,
           },
           tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.muted,
+          tabBarInactiveTintColor: Colors.textSoft,
           tabBarIcon: ({focused, color, size}) => {
             let iconName;
 
@@ -62,8 +88,7 @@ function MainTabs() {
         <Tab.Screen name="Bibliothèque" component={Library} />
       </Tab.Navigator>
 
-      {/* PlayerBar persistante au-dessus de la barre de navigation */}
-      <View style={{position: 'absolute', bottom: 60, left: 0, right: 0}}>
+      <View style={styles.playerBarWrapper}>
         <PlayerBar />
       </View>
     </View>
@@ -74,10 +99,12 @@ export default function AppNavigator() {
   const {user} = useAuth();
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,
+          presentation: 'card',
+          cardStyle: {backgroundColor: Colors.background},
           cardStyleInterpolator: ({current, layouts}) => {
             return {
               cardStyle: {
@@ -116,3 +143,16 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = {
+  shell: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
+  playerBarWrapper: {
+    position: 'absolute',
+    bottom: 84,
+    left: 0,
+    right: 0,
+  },
+};
