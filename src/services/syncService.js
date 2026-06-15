@@ -10,13 +10,15 @@ export class OfflineSyncService {
     }
 
     const {dispatch} = store;
-    const playlistIds = [...new Set(offlineQueue.map(a => a.playlistId))].filter(
-      Boolean,
-    );
+    const playlistIds = [
+      ...new Set(offlineQueue.map(a => a.playlistId)),
+    ].filter(Boolean);
 
     for (const id of playlistIds) {
       const playlist = groupPlaylists[id];
-      if (!playlist) continue;
+      if (!playlist) {
+        continue;
+      }
 
       try {
         // 1. Upsert playlist info
@@ -27,7 +29,9 @@ export class OfflineSyncService {
           is_public: false,
         });
 
-        if (plError) throw plError;
+        if (plError) {
+          throw plError;
+        }
 
         // 2. Sync tracks: Clear and Re-insert to keep order and consistency
         await supabase.from('playlist_tracks').delete().eq('playlist_id', id);
@@ -56,7 +60,9 @@ export class OfflineSyncService {
             .from('playlist_tracks')
             .insert(trackEntries);
 
-          if (tracksError) throw tracksError;
+          if (tracksError) {
+            throw tracksError;
+          }
         }
 
         dispatch(markPlaylistSynced({playlistId: id}));

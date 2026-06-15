@@ -1,10 +1,32 @@
-
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0b1020; color: #e9edf2; overflow-x: hidden; }
-        .primary-orange { color: #F97316; }
-        .bg-primary-orange { background-color: #F97316; }
-        .border-primary-orange { border-color: #F97316; }
-        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; border-color: #F97316; }
-        .nav-link { transition: all 0.2s ease; }
-        .nav-link:hover { color: #F97316; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #0b1020;
+  color: #e9edf2;
+  overflow-x: hidden;
+}
+.primary-orange {
+  color: #f97316;
+}
+.bg-primary-orange {
+  background-color: #f97316;
+}
+.border-primary-orange {
+  border-color: #f97316;
+}
+.card-hover:hover {
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+  border-color: #f97316;
+}
+.nav-link {
+  transition: all 0.2s ease;
+}
+.nav-link:hover {
+  color: #f97316;
+}
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
