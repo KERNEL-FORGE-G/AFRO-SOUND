@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "react-native start --reset-cache",
-    "android": "bash scripts/setup-android-sdk.sh && react-native run-android --reset-cache",
+    "android": "react-native run-android --active-arch-only",
     "build:debug": "cd android && ./gradlew assembleDebug",
     "build:release": "cd android && ./gradlew assembleRelease",
     "setup:sdk": "bash scripts/setup-android-sdk.sh",
