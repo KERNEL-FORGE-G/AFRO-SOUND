@@ -24,8 +24,15 @@ function build() {
     let tailwindCss = fs.readFileSync(path.join(dashboardDir, 'output.css'), 'utf8');
     let js = fs.readFileSync(path.join(dashboardDir, 'App.js'), 'utf8');
 
-    // Escape backticks and dollar signs for template literal
-    const sanitize = (str) => str.replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
+    // Escape for embedding inside a JS template literal.
+    // Backslashes MUST be escaped first, otherwise Tailwind's escaped
+    // selectors (e.g. ".md\:grid-cols-4", ".hover\:text-red-300") lose their
+    // backslash when the template literal is evaluated, producing invalid CSS
+    // and silently dropping every responsive / state variant.
+    const sanitize = (str) => str
+        .replace(/\\/g, '\\\\')
+        .replace(/`/g, '\\`')
+        .replace(/\$\{/g, '\\${');
 
     let combinedCss = customCss + '\n/* Tailwind CSS */\n' + tailwindCss;
 
