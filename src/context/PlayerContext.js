@@ -3,16 +3,23 @@
  * Gère l'état du lecteur (piste en cours, file d'attente, play/pause)
  * partagé entre tous les écrans via React Context.
  */
-import React, {createContext, useContext, useState, useCallback, useRef} from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+} from 'react';
 import Sound from 'react-native-sound';
 import {Alert} from 'react-native';
-import RNFetchBlob from 'rn-fetch-blob';
-import {supabase} from '../supabaseClient';
+import TrackPlayer, {Capability, RepeatMode} from 'react-native-track-player';
 
 const PlayerContext = createContext(null);
 
 // Configuration initiale pour react-native-sound
 Sound.setCategory('Playback');
+
+let playerReady = false;
 
 const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl;
 const getTrackArtwork = track =>
@@ -81,41 +88,50 @@ export function PlayerProvider({children}) {
   const [isShuffle, setIsShuffle] = useState(false);
   const soundRef = useRef(null);
 
-  const playTrack = useCallback(
-    async (track, tracks = []) => {
-      if (soundRef.current) {
-        soundRef.current.release();
-      }
+  const toggleRepeat = useCallback(() => {
+    const modes = ['off', 'on', 'one'];
+    const current = modes.indexOf(repeatMode);
+    setRepeatMode(modes[(current + 1) % modes.length]);
+  }, [repeatMode]);
 
-      const url = getTrackUrl(track);
-      if (!url) {
-        Alert.alert('Erreur', 'Pas d\'URL.');
+  const toggleShuffle = useCallback(() => {
+    setIsShuffle(!isShuffle);
+  }, [isShuffle]);
+
+  const playTrack = useCallback(async (track, tracks = []) => {
+    if (soundRef.current) {
+      soundRef.current.release();
+    }
+
+    const url = getTrackUrl(track);
+    if (!url) {
+      Alert.alert('Erreur', "Pas d'URL.");
+      return;
+    }
+
+    const sound = new Sound(url, null, error => {
+      if (error) {
+        Alert.alert('Erreur', 'Impossible de charger le son.');
         return;
       }
-
-      const sound = new Sound(url, null, (error) => {
-        if (error) {
-          Alert.alert('Erreur', 'Impossible de charger le son.');
-          return;
+      sound.play(success => {
+        if (success) {
+          setIsPlaying(false);
+          setCurrentTrack(null);
+        } else {
+          Alert.alert('Erreur', 'Erreur de lecture.');
         }
-        sound.play((success) => {
-          if (success) {
-            setIsPlaying(false);
-            setCurrentTrack(null);
-          } else {
-            Alert.alert('Erreur', 'Erreur de lecture.');
-          }
-        });
-        setIsPlaying(true);
-        setCurrentTrack(track);
       });
-      soundRef.current = sound;
-    },
-    [],
-  );
+      setIsPlaying(true);
+      setCurrentTrack(track);
+    });
+    soundRef.current = sound;
+  }, []);
 
   const togglePlayback = useCallback(() => {
-    if (!soundRef.current) return;
+    if (!soundRef.current) {
+      return;
+    }
     if (isPlaying) {
       soundRef.current.pause();
     } else {
@@ -124,7 +140,7 @@ export function PlayerProvider({children}) {
     setIsPlaying(!isPlaying);
   }, [isPlaying]);
 
-  const seekTo = useCallback((position) => {
+  const seekTo = useCallback(position => {
     if (soundRef.current) {
       soundRef.current.setCurrentTime(position);
     }
