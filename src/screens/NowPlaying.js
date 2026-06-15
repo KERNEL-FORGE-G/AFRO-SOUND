@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -45,6 +45,7 @@ export default function NowPlaying({navigation, route}) {
     toggleRepeat,
     isShuffle,
     toggleShuffle,
+    downloadTrack,
   } = usePlayer();
   const playbackState = usePlaybackState();
   const {position, duration} = useProgress(500);
@@ -85,15 +86,9 @@ export default function NowPlaying({navigation, route}) {
     }
   }, [isPlaying]);
 
-  useEffect(() => {
-    if (user && track.id) {
-      checkIfLiked();
-    }
-  }, [user, track.id]);
-
-  const checkIfLiked = async () => {
+  const checkIfLiked = useCallback(async () => {
     try {
-      const {data, error} = await supabase
+      const {data} = await supabase
         .from('favorites')
         .select('*')
         .eq('user_id', user.id)
@@ -108,7 +103,13 @@ export default function NowPlaying({navigation, route}) {
     } catch (e) {
       setIsLiked(false);
     }
-  };
+  }, [user?.id, track.id]);
+
+  useEffect(() => {
+    if (user && track.id) {
+      checkIfLiked();
+    }
+  }, [user, track.id, checkIfLiked]);
 
   const toggleLike = async () => {
     if (!user) {
@@ -124,7 +125,9 @@ export default function NowPlaying({navigation, route}) {
           .delete()
           .eq('user_id', user.id)
           .eq('track_id', track.id);
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
         setIsLiked(false);
       } else {
         // Ensure track exists in tracks table first
@@ -146,7 +149,9 @@ export default function NowPlaying({navigation, route}) {
             track_id: track.id,
           },
         ]);
-        if (error) throw error;
+        if (error) {
+          throw error;
+        }
         setIsLiked(true);
       }
     } catch (e) {
@@ -210,7 +215,6 @@ export default function NowPlaying({navigation, route}) {
       icon: 'download-outline',
       label: 'Télécharger',
       onPress: () => {
-        const { downloadTrack } = usePlayer();
         downloadTrack(track);
       },
     },
@@ -320,12 +324,14 @@ export default function NowPlaying({navigation, route}) {
 
         <TouchableOpacity onPress={toggleRepeat}>
           <Ionicons
-            name={repeatMode === 'track' ? "repeat-outline" : "repeat"}
+            name={repeatMode === 'track' ? 'repeat-outline' : 'repeat'}
             size={26}
             color={repeatMode === 'off' ? Colors.muted : Colors.primary}
           />
           {repeatMode === 'track' && (
-            <View style={styles.repeatBadge}><Text style={styles.repeatBadgeText}>1</Text></View>
+            <View style={styles.repeatBadge}>
+              <Text style={styles.repeatBadgeText}>1</Text>
+            </View>
           )}
         </TouchableOpacity>
       </View>
