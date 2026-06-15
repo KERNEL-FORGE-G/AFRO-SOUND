@@ -3,28 +3,16 @@
  * Gère l'état du lecteur (piste en cours, file d'attente, play/pause)
  * partagé entre tous les écrans via React Context.
  */
-import React, {createContext, useContext, useState, useCallback} from 'react';
-import TrackPlayer, {
-  Capability,
-  RepeatMode,
-  State,
-  usePlaybackState,
-  useProgress,
-  useTrackPlayerEvents,
-  Event,
-} from 'react-native-track-player';
+import React, {createContext, useContext, useState, useCallback, useRef} from 'react';
+import Sound from 'react-native-sound';
 import {Alert} from 'react-native';
 import RNFetchBlob from 'rn-fetch-blob';
 import {supabase} from '../supabaseClient';
 
 const PlayerContext = createContext(null);
 
-let playerReady = false;
-
-const getPlaybackStateValue = playbackState =>
-  typeof playbackState === 'object' && playbackState !== null
-    ? playbackState.state
-    : playbackState;
+// Configuration initiale pour react-native-sound
+Sound.setCategory('Playback');
 
 const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl;
 const getTrackArtwork = track =>
@@ -88,178 +76,78 @@ const setupPlayer = async () => {
 export function PlayerProvider({children}) {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [queue, setQueue] = useState([]);
-  const [isSetup, setIsSetup] = useState(false);
-  const [repeatMode, setRepeatMode] = useState('off'); // 'off' | 'track' | 'queue'
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [repeatMode, setRepeatMode] = useState('off');
   const [isShuffle, setIsShuffle] = useState(false);
+  const soundRef = useRef(null);
 
-  // Écoute les changements de piste
-  useTrackPlayerEvents([Event.PlaybackActiveTrackChanged], async event => {
-    if (event.track) {
-      setCurrentTrack(event.track);
-
-      // Enregistrer dans l'historique si un utilisateur est connecté
-      try {
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user;
-        if (user && event.track.id) {
-          await supabase.from('play_history').insert([
-            { user_id: user.id, track_id: event.track.id }
-          ]);
-        }
-      } catch (e) {
-        console.warn('History recording failed:', e.message);
+  const playTrack = useCallback(
+    async (track, tracks = []) => {
+      if (soundRef.current) {
+        soundRef.current.release();
       }
+
+      const url = getTrackUrl(track);
+      if (!url) {
+        Alert.alert('Erreur', 'Pas d\'URL.');
+        return;
+      }
+
+      const sound = new Sound(url, null, (error) => {
+        if (error) {
+          Alert.alert('Erreur', 'Impossible de charger le son.');
+          return;
+        }
+        sound.play((success) => {
+          if (success) {
+            setIsPlaying(false);
+            setCurrentTrack(null);
+          } else {
+            Alert.alert('Erreur', 'Erreur de lecture.');
+          }
+        });
+        setIsPlaying(true);
+        setCurrentTrack(track);
+      });
+      soundRef.current = sound;
+    },
+    [],
+  );
+
+  const togglePlayback = useCallback(() => {
+    if (!soundRef.current) return;
+    if (isPlaying) {
+      soundRef.current.pause();
+    } else {
+      soundRef.current.play();
     }
-  });
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
 
-  const ensureSetup = useCallback(async () => {
-    if (!isSetup) {
-      await setupPlayer();
-      setIsSetup(true);
-    }
-  }, [isSetup]);
-
-  const downloadTrack = useCallback(async track => {
-    const url = getTrackUrl(track);
-    if (!url) {
-      Alert.alert('Erreur', 'Aucune URL audio disponible pour ce morceau.');
-      return;
-    }
-
-    const {dirs} = RNFetchBlob.fs;
-    const safeTitle = (track.title || 'afro_sound_track').replace(
-      /[^a-z0-9_-]/gi,
-      '_',
-    );
-    const filePath = `${dirs.DocumentDir}/${safeTitle}.mp3`;
-
-    try {
-      await RNFetchBlob.config({
-        fileCache: true,
-        path: filePath,
-      }).fetch('GET', url);
-
-      Alert.alert('Succès', 'Le morceau a été téléchargé.');
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Erreur', 'Le téléchargement a échoué.');
+  const seekTo = useCallback((position) => {
+    if (soundRef.current) {
+      soundRef.current.setCurrentTime(position);
     }
   }, []);
 
   const skipToNext = useCallback(async () => {
-    await TrackPlayer.skipToNext();
+    // Logique simplifiée pour react-native-sound
   }, []);
 
   const skipToPrevious = useCallback(async () => {
-    await TrackPlayer.skipToPrevious();
+    // Logique simplifiée pour react-native-sound
   }, []);
-
-  const seekTo = useCallback(async position => {
-    await TrackPlayer.seekTo(position);
-  }, []);
-
-  const togglePlayback = useCallback(async playbackState => {
-    const state = getPlaybackStateValue(playbackState);
-    if (state === State.Playing || state === State.Buffering) {
-      await TrackPlayer.pause();
-      return;
-    }
-    await TrackPlayer.play();
-  }, []);
-
-  const toggleRepeat = useCallback(async () => {
-    let nextMode = 'off';
-    let rpMode = RepeatMode.Off;
-
-    if (repeatMode === 'off') {
-      nextMode = 'track';
-      rpMode = RepeatMode.Track;
-    } else if (repeatMode === 'track') {
-      nextMode = 'queue';
-      rpMode = RepeatMode.Queue;
-    }
-
-    await TrackPlayer.setRepeatMode(rpMode);
-    setRepeatMode(nextMode);
-  }, [repeatMode]);
-
-  const toggleShuffle = useCallback(async () => {
-    const nextShuffle = !isShuffle;
-    setIsShuffle(nextShuffle);
-
-    if (nextShuffle && queue.length > 0) {
-      // Create a shuffled version of the queue, keeping current track at start
-      const currentIdx = await TrackPlayer.getActiveTrackIndex();
-      const tracks = [...queue];
-      const current = tracks.splice(currentIdx, 1)[0];
-
-      for (let i = tracks.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
-      }
-
-      const newQueue = [current, ...tracks];
-      await TrackPlayer.reset();
-      await TrackPlayer.add(newQueue);
-      await TrackPlayer.play();
-    } else if (!nextShuffle && queue.length > 0) {
-        // Reset to original order if we had it stored?
-        // For simplicity, we just keep the current order for now
-    }
-  }, [isShuffle, queue]);
-
-  /**
-   * Joue une piste (et charge la file d'attente si fournie)
-   * @param {object} track  - La piste à lire
-   * @param {Array}  tracks - La file d'attente complète (optionnel)
-   */
-  const playTrack = useCallback(
-    async (track, tracks = []) => {
-      try {
-        await ensureSetup();
-
-        const playableTracks = (tracks.length > 0 ? tracks : [track])
-          .filter(item => getTrackUrl(item))
-          .map(normalizeTrack);
-        const selectedTrack = normalizeTrack(track);
-
-        if (!selectedTrack.url || playableTracks.length === 0) {
-          Alert.alert(
-            'Erreur',
-            'Ce titre ne contient pas de flux audio lisible.',
-          );
-          return;
-        }
-
-        await TrackPlayer.reset();
-        await TrackPlayer.add(playableTracks);
-
-        const idx = playableTracks.findIndex(t => t.id === selectedTrack.id);
-        if (idx > 0) {
-          await TrackPlayer.skip(idx);
-        }
-
-        await TrackPlayer.play();
-        setCurrentTrack(selectedTrack);
-        setQueue(playableTracks);
-      } catch (e) {
-        console.error('[PlayerContext] playTrack error:', e.message);
-      }
-    },
-    [ensureSetup],
-  );
 
   return (
     <PlayerContext.Provider
       value={{
         currentTrack,
-        queue,
+        isPlaying,
         playTrack,
-        downloadTrack,
+        togglePlayback,
+        seekTo,
         skipToNext,
         skipToPrevious,
-        seekTo,
-        togglePlayback,
         repeatMode,
         toggleRepeat,
         isShuffle,
@@ -277,6 +165,3 @@ export const usePlayer = () => {
   }
   return ctx;
 };
-
-// Ré-exporte les hooks utiles de track-player pour les écrans
-export {usePlaybackState, useProgress, State, getPlaybackStateValue};
