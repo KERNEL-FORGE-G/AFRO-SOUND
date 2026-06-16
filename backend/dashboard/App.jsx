@@ -1,3 +1,4 @@
+/* global React, ReactDOM, Chart, localStorage, fetch, confirm, alert, document */
 const {useState, useEffect} = React;
 
 const StatusCard = ({label, value, state}) => {
@@ -143,6 +144,7 @@ const StatsView = ({stats}) => {
     return () => {
       charts.forEach(c => c.destroy());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stats]);
 
   if (!stats) {
@@ -246,6 +248,7 @@ const App = () => {
     if (adminKey) {
       checkAuth();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = () => {
