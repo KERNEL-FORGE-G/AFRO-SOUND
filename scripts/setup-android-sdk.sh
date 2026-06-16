@@ -77,11 +77,8 @@ fi
 JAVA_VERSION="$("$JAVA_HOME_DETECTED/bin/java" -version 2>&1 | head -1)"
 echo "==> JDK: $JAVA_HOME_DETECTED ($JAVA_VERSION)"
 
-if grep -q '^org.gradle.java.home=' "$GRADLE_PROPS"; then
-  sed -i "s|^org.gradle.java.home=.*|org.gradle.java.home=$JAVA_HOME_DETECTED|" "$GRADLE_PROPS"
-else
-  printf '\norg.gradle.java.home=%s\n' "$JAVA_HOME_DETECTED" >> "$GRADLE_PROPS"
-fi
+echo "==> JAVA_HOME: $JAVA_HOME_DETECTED"
+echo "   Assurez-vous que JAVA_HOME pointe vers ce JDK (JDK 17) avant de lancer Gradle."
 
 echo ""
 echo "Configuration terminee."
