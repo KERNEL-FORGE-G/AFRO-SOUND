@@ -760,7 +760,9 @@ const App = () => {
               <table className="w-full">
                 <thead>
                   <tr className="text-left border-b border-[#262b33]">
-                    <th className="pb-3 text-xs text-gray-500 uppercase">Nom</th>
+                    <th className="pb-3 text-xs text-gray-500 uppercase">
+                      Nom
+                    </th>
                     <th className="pb-3 text-xs text-gray-500 uppercase">
                       Propriétaire
                     </th>
