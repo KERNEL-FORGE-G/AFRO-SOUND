@@ -1,0 +1,36 @@
+diff --git a/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/Sound.kt b/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/Sound.kt
+index 749ea14..1e5b2f0 100644
+--- a/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/Sound.kt
++++ b/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/Sound.kt
+@@ -9,7 +9,7 @@ import android.media.MediaPlayer.OnPreparedListener
+
+ import android.util.Log
+ import com.facebook.react.bridge.Arguments
+-import com.facebook.react.bridge.BridgeReactContext.RCTDeviceEventEmitter
++import com.facebook.react.bridge.RCTDeviceEventEmitter
+ import com.facebook.react.bridge.Callback
+ import com.facebook.react.bridge.ReactApplicationContext
+
+@@ -30,8 +30,8 @@ open class Sound internal constructor(context:ReactApplicationContext):AudioMana
+     val params = Arguments.createMap()
+     params.putBoolean("isPlaying", isPlaying)
+     params.putDouble("playerKey", playerKey)
+-    reactContext.getJSModule(RCTDeviceEventEmitter::class.java)
+-      ?.emit("onPlayChange", params)
++    (reactContext as com.facebook.react.bridge.ReactContext).getJSModule(RCTDeviceEventEmitter::class.java)
++      .emit("onPlayChange", params)
+   }
+
+   fun prepare(fileName: String, key: Double?, options: ReadableMap, callback: Callback) {
+diff --git a/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/SoundPackage.kt b/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/SoundPackage.kt
+index 7b57dbb..72d6fcd 100644
+--- a/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/SoundPackage.kt
++++ b/node_modules/react-native-sound/android/src/main/java/com/zmxv/RNSound/SoundPackage.kt
+@@ -28,6 +28,7 @@ class SoundPackage : TurboReactPackage() {
+         SoundModule.NAME,
+         canOverrideExistingModule,
+         needsEagerInit,
++        true,
+         isCxxModule,
+         isTurboModule
+       )
