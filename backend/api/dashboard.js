@@ -11,16 +11,38 @@ module.exports = `<!DOCTYPE html>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0b1020; color: #e9edf2; overflow-x: hidden; }
-        .primary-orange { color: #F97316; }
-        .bg-primary-orange { background-color: #F97316; }
-        .border-primary-orange { border-color: #F97316; }
-        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; border-color: #F97316; }
-        .nav-link { transition: all 0.2s ease; }
-        .nav-link:hover { color: #F97316; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #0b1020;
+  color: #e9edf2;
+  overflow-x: hidden;
+}
+.primary-orange {
+  color: #f97316;
+}
+.bg-primary-orange {
+  background-color: #f97316;
+}
+.border-primary-orange {
+  border-color: #f97316;
+}
+.card-hover:hover {
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+  border-color: #f97316;
+}
+.nav-link {
+  transition: all 0.2s ease;
+}
+.nav-link:hover {
+  color: #f97316;
+}
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
 
 /* Tailwind CSS */
 *, ::before, ::after {
@@ -1086,6 +1108,7 @@ video {
     <div id="root"></div>
 
     <script>
+/* global React, ReactDOM, Chart, localStorage, fetch, confirm, alert, document */
 const {
   useState,
   useEffect
@@ -1103,7 +1126,7 @@ const StatusCard = ({
   }, label), /*#__PURE__*/React.createElement("div", {
     className: "text-lg font-semibold mt-2 flex items-center"
   }, state && /*#__PURE__*/React.createElement("span", {
-    className: "w-2.5 h-2.5 rounded-full mr-2 " + dotColor
+    className: 'w-2.5 h-2.5 rounded-full mr-2 ' + dotColor
   }), value));
 };
 const StatsView = ({
@@ -1116,7 +1139,9 @@ const StatsView = ({
     searches: React.useRef(null)
   };
   useEffect(() => {
-    if (!stats) return;
+    if (!stats) {
+      return;
+    }
     const charts = [];
 
     // Sources Chart
@@ -1253,10 +1278,13 @@ const StatsView = ({
     return () => {
       charts.forEach(c => c.destroy());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stats]);
-  if (!stats) return /*#__PURE__*/React.createElement("div", {
-    className: "text-center py-20 text-gray-500 animate__animated animate__fadeIn"
-  }, "Chargement des statistiques...");
+  if (!stats) {
+    return /*#__PURE__*/React.createElement("div", {
+      className: "text-center py-20 text-gray-500 animate__animated animate__fadeIn"
+    }, "Chargement des statistiques...");
+  }
   return /*#__PURE__*/React.createElement("div", {
     className: "animate__animated animate__fadeIn"
   }, /*#__PURE__*/React.createElement("h2", {
@@ -1345,7 +1373,10 @@ const App = () => {
   const [isAuth, setIsAuth] = useState(false);
   useEffect(() => {
     loadStatus();
-    if (adminKey) checkAuth();
+    if (adminKey) {
+      checkAuth();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const checkAuth = () => {
     setIsAuth(true);
@@ -1397,7 +1428,9 @@ const App = () => {
     }
   };
   const pingAudio = async url => {
-    if (!url) return alert('Entrez une URL');
+    if (!url) {
+      return alert('Entrez une URL');
+    }
     setPingResult({
       type: 'Audio',
       message: 'En cours...'
@@ -1445,7 +1478,11 @@ const App = () => {
         })
       });
       const d = await res.json();
-      if (d.success) alert('Ajouté !');else alert('Erreur: ' + d.error);
+      if (d.success) {
+        alert('Ajouté !');
+      } else {
+        alert('Erreur: ' + d.error);
+      }
     } catch (e) {
       alert(e.message);
     }
@@ -1485,13 +1522,17 @@ const App = () => {
       setView('stats');
       const res = await adminFetch('/api/admin/stats');
       const data = await res.json();
-      if (data.success) setStats(data.data);
+      if (data.success) {
+        setStats(data.data);
+      }
     } catch (e) {
       alert(e.message);
     }
   };
   const deleteTrack = async id => {
-    if (!confirm('Supprimer ce titre ?')) return;
+    if (!confirm('Supprimer ce titre ?')) {
+      return;
+    }
     try {
       await adminFetch('/api/admin/tracks/' + id, {
         method: 'DELETE'
@@ -1502,7 +1543,9 @@ const App = () => {
     }
   };
   const deletePlaylist = async id => {
-    if (!confirm('Supprimer cette playlist ?')) return;
+    if (!confirm('Supprimer cette playlist ?')) {
+      return;
+    }
     try {
       await adminFetch('/api/admin/playlists/' + id, {
         method: 'DELETE'
@@ -1557,19 +1600,19 @@ const App = () => {
     className: "bg-[#16191f] border-b border-[#262b33] px-6 py-2 flex gap-4"
   }, /*#__PURE__*/React.createElement("button", {
     onClick: () => setView('status'),
-    className: "nav-link px-3 py-1 rounded-md text-sm " + (view === 'status' ? 'bg-primary-orange text-black' : 'text-gray-400')
+    className: 'nav-link px-3 py-1 rounded-md text-sm ' + (view === 'status' ? 'bg-primary-orange text-black' : 'text-gray-400')
   }, "Dashboard"), /*#__PURE__*/React.createElement("button", {
     onClick: loadStats,
-    className: "nav-link px-3 py-1 rounded-md text-sm " + (view === 'stats' ? 'bg-primary-orange text-black' : 'text-gray-400')
+    className: 'nav-link px-3 py-1 rounded-md text-sm ' + (view === 'stats' ? 'bg-primary-orange text-black' : 'text-gray-400')
   }, "Statistiques"), /*#__PURE__*/React.createElement("button", {
     onClick: loadLibrary,
-    className: "nav-link px-3 py-1 rounded-md text-sm " + (view === 'library' ? 'bg-primary-orange text-black' : 'text-gray-400')
+    className: 'nav-link px-3 py-1 rounded-md text-sm ' + (view === 'library' ? 'bg-primary-orange text-black' : 'text-gray-400')
   }, "Biblioth\xE8que"), /*#__PURE__*/React.createElement("button", {
     onClick: loadProfiles,
-    className: "nav-link px-3 py-1 rounded-md text-sm " + (view === 'profiles' ? 'bg-primary-orange text-black' : 'text-gray-400')
+    className: 'nav-link px-3 py-1 rounded-md text-sm ' + (view === 'profiles' ? 'bg-primary-orange text-black' : 'text-gray-400')
   }, "Utilisateurs"), /*#__PURE__*/React.createElement("button", {
     onClick: loadPlaylists,
-    className: "nav-link px-3 py-1 rounded-md text-sm " + (view === 'playlists' ? 'bg-primary-orange text-black' : 'text-gray-400')
+    className: 'nav-link px-3 py-1 rounded-md text-sm ' + (view === 'playlists' ? 'bg-primary-orange text-black' : 'text-gray-400')
   }, "Playlists")), /*#__PURE__*/React.createElement("main", {
     className: "flex-1 p-6 max-w-6xl mx-auto w-full"
   }, view === 'stats' && /*#__PURE__*/React.createElement(StatsView, {
@@ -1582,19 +1625,19 @@ const App = () => {
     className: "grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
   }, /*#__PURE__*/React.createElement(StatusCard, {
     label: "Backend",
-    value: status ? "En ligne" : "Chargement...",
-    state: status ? "ok" : "warn"
+    value: status ? 'En ligne' : 'Chargement...',
+    state: status ? 'ok' : 'warn'
   }), /*#__PURE__*/React.createElement(StatusCard, {
     label: "Supabase",
-    value: status?.env?.supabase ? "Configuré" : "Absent",
-    state: status?.env?.supabase ? "ok" : "ko"
+    value: status?.env?.supabase ? 'Configuré' : 'Absent',
+    state: status?.env?.supabase ? 'ok' : 'ko'
   }), /*#__PURE__*/React.createElement(StatusCard, {
     label: "Audius",
-    value: status?.audiusReachable ? "Joignable" : "Indisponible",
-    state: status?.audiusReachable ? "ok" : "ko"
+    value: status?.audiusReachable ? 'Joignable' : 'Indisponible',
+    state: status?.audiusReachable ? 'ok' : 'ko'
   }), /*#__PURE__*/React.createElement(StatusCard, {
     label: "Node Version",
-    value: status?.node || "---"
+    value: status?.node || '---'
   })), /*#__PURE__*/React.createElement("h2", {
     className: "text-gray-500 text-xs uppercase font-bold tracking-widest mb-4"
   }, "Diagnostics"), /*#__PURE__*/React.createElement("div", {

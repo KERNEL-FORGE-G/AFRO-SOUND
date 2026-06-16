@@ -15,6 +15,17 @@ jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
 
 jest.mock('react-native-vector-icons/Ionicons', () => 'Ionicons');
 
+jest.mock('react-native-sound', () => {
+  const Sound = jest.fn();
+  Sound.setCategory = jest.fn();
+  Sound.prototype.setVolume = jest.fn();
+  Sound.prototype.play = jest.fn();
+  Sound.prototype.stop = jest.fn();
+  Sound.prototype.release = jest.fn();
+  Sound.prototype.getDuration = jest.fn();
+  return Sound;
+});
+
 jest.mock('./src/store', () => ({store: {}, persistor: {}}));
 
 jest.mock('react-redux', () => ({

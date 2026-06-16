@@ -1,3 +1,4 @@
+/* global React, ReactDOM, Chart, localStorage, fetch, confirm, alert, document */
 const {useState, useEffect} = React;
 
 const StatusCard = ({label, value, state}) => {
@@ -143,6 +144,7 @@ const StatsView = ({stats}) => {
     return () => {
       charts.forEach(c => c.destroy());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stats]);
 
   if (!stats) {
@@ -246,6 +248,7 @@ const App = () => {
     if (adminKey) {
       checkAuth();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = () => {
@@ -757,9 +760,7 @@ const App = () => {
               <table className="w-full">
                 <thead>
                   <tr className="text-left border-b border-[#262b33]">
-                    <th className="pb-3 text-xs text-gray-500 uppercase">
-                      Nom
-                    </th>
+                    <th className="pb-3 text-xs text-gray-500 uppercase">Nom</th>
                     <th className="pb-3 text-xs text-gray-500 uppercase">
                       Propriétaire
                     </th>
