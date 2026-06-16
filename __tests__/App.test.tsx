@@ -10,7 +10,6 @@ import {it} from '@jest/globals';
 import renderer from 'react-test-renderer';
 
 jest.mock('../src/navigation/AppNavigator', () => {
-  const React = require('react');
   const {View, Text} = require('react-native');
   return () => (
     <View>
