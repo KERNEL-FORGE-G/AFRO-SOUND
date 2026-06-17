@@ -24,7 +24,7 @@ const PlayerContext = createContext(null);
 
 let playerSetupPromise = null;
 
-const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl;
+const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl || track?.audio_url;
 const getTrackArtwork = track =>
   track?.artwork || track?.cover || track?.cover_url || '';
 const getTrackArtist = track =>
@@ -208,21 +208,17 @@ export function PlayerProvider({children}) {
       0,
     );
 
-    const nextQueue = shuffleRef.current
-      ? [
-          normalizedQueue[initialIndex],
-          ...normalizedQueue
-            .filter(item => item.id !== normalizedTrack.id)
-            .sort(() => Math.random() - 0.5),
-        ]
-      : normalizedQueue;
+    let nextQueue = [...normalizedQueue];
+    let nextIndex = initialIndex;
 
-    const nextIndex = shuffleRef.current
-      ? 0
-      : Math.max(
-          nextQueue.findIndex(item => item.id === normalizedTrack.id),
-          initialIndex,
-        );
+    if (shuffleRef.current) {
+      const trackToKeep = normalizedQueue[initialIndex];
+      const otherTracks = normalizedQueue
+        .filter(item => item.id !== trackToKeep.id)
+        .sort(() => Math.random() - 0.5);
+      nextQueue = [trackToKeep, ...otherTracks];
+      nextIndex = 0;
+    }
 
     await setupPlayer();
     await TrackPlayer.reset();
@@ -260,36 +256,44 @@ export function PlayerProvider({children}) {
   const skipToNext = useCallback(async () => {
     await setupPlayer();
     try {
-      await TrackPlayer.skipToNext();
-    } catch (error) {
-      if (repeatModeRef.current === 'on' && queueRef.current.length > 0) {
-        await TrackPlayer.skip(0);
-        await TrackPlayer.play();
-        return;
+      const activeIndex = await TrackPlayer.getActiveTrackIndex();
+      const currentQueue = await TrackPlayer.getQueue();
+      
+      if (activeIndex === currentQueue.length - 1) {
+        if (repeatModeRef.current === 'on') {
+          await TrackPlayer.skip(0);
+        } else {
+          return; // Stop at end
+        }
+      } else {
+        await TrackPlayer.skipToNext();
       }
-      throw error;
+      await TrackPlayer.play();
+      await syncQueueState();
+    } catch (error) {
+      console.warn('[skipToNext] error:', error.message);
     }
-
-    await TrackPlayer.play();
-    await syncQueueState();
   }, [syncQueueState]);
 
   const skipToPrevious = useCallback(async () => {
     await setupPlayer();
-
     try {
-      await TrackPlayer.skipToPrevious();
-    } catch (error) {
-      if (repeatModeRef.current === 'on' && queueRef.current.length > 0) {
-        await TrackPlayer.skip(queueRef.current.length - 1);
-        await TrackPlayer.play();
-        return;
+      const activeIndex = await TrackPlayer.getActiveTrackIndex();
+      if (activeIndex === 0) {
+        if (repeatModeRef.current === 'on') {
+          const currentQueue = await TrackPlayer.getQueue();
+          await TrackPlayer.skip(currentQueue.length - 1);
+        } else {
+          await TrackPlayer.seekTo(0);
+        }
+      } else {
+        await TrackPlayer.skipToPrevious();
       }
-      throw error;
+      await TrackPlayer.play();
+      await syncQueueState();
+    } catch (error) {
+      console.warn('[skipToPrevious] error:', error.message);
     }
-
-    await TrackPlayer.play();
-    await syncQueueState();
   }, [syncQueueState]);
 
   const addToQueue = useCallback(async track => {
@@ -357,8 +361,32 @@ export function PlayerProvider({children}) {
     setRepeatMode(nextMode);
   }, []);
 
-  const toggleShuffle = useCallback(() => {
-    setIsShuffle(previousValue => !previousValue);
+  const toggleShuffle = useCallback(async () => {
+    const nextShuffle = !shuffleRef.current;
+    setIsShuffle(nextShuffle);
+    shuffleRef.current = nextShuffle;
+
+    if (nextShuffle && queueRef.current.length > 1) {
+      // Shuffle current queue keeping current track at index 0
+      const currentIdx = await TrackPlayer.getActiveTrackIndex();
+      const currentTrackObj = queueRef.current[currentIdx];
+      const otherTracks = queueRef.current
+        .filter((_, idx) => idx !== currentIdx)
+        .sort(() => Math.random() - 0.5);
+      
+      const newQueue = [currentTrackObj, ...otherTracks];
+      
+      await TrackPlayer.reset();
+      await TrackPlayer.add(newQueue);
+      await TrackPlayer.play();
+      
+      queueRef.current = newQueue;
+      setQueue(newQueue);
+      setQueueIndex(0);
+    } else if (!nextShuffle) {
+      // In a real app, we might want to restore original order, 
+      // but here we just keep current state.
+    }
   }, []);
 
   const downloadTrack = useCallback(async track => {
@@ -456,12 +484,12 @@ export function PlayerProvider({children}) {
   );
 }
 
-export {State, usePlaybackState, useProgress};
-
 export const usePlayer = () => {
-  const ctx = useContext(PlayerContext);
-  if (!ctx) {
-    throw new Error('usePlayer must be inside PlayerProvider');
+  const context = useContext(PlayerContext);
+  if (!context) {
+    throw new Error('usePlayer must be used within a PlayerProvider');
   }
-  return ctx;
-};
+  return context;
+}
+
+export {State, Event, RepeatMode};

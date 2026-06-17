@@ -8,8 +8,16 @@ import {startRealtimePlaylistSync} from './src/services/realtimeService';
 
 function App(): JSX.Element {
   useEffect(() => {
-    const unsubscribe = startRealtimePlaylistSync();
-    return () => unsubscribe();
+    try {
+      const unsubscribe = startRealtimePlaylistSync();
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
+    } catch (error) {
+      console.warn('[App] Realtime sync init failed:', error.message);
+    }
   }, []);
 
   return (

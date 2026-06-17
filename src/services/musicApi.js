@@ -6,6 +6,7 @@
  */
 
 import {getApiUrl} from '../config';
+import {supabase} from '../supabaseClient';
 
 const DEEZER_BASE = 'https://api.deezer.com';
 const ITUNES_BASE = 'https://itunes.apple.com';
@@ -56,7 +57,6 @@ export const upsertTrack = async track => {
  */
 export const addTrackToPlaylist = async (playlistId, trackId) => {
   try {
-    const {supabase} = require('../supabaseClient');
     const {error} = await supabase
       .from('playlist_tracks')
       .upsert([{playlist_id: playlistId, track_id: trackId}], {
@@ -132,120 +132,59 @@ const normalizeItunes = track => ({
 });
 
 // ─────────────────────────────────────────
-// DEEZER API
+// RECHERCHES DIRECTES (Deezer / iTunes)
 // ─────────────────────────────────────────
 
-/**
- * Recherche des titres via Deezer
- * @param {string} query - Terme de recherche
- * @param {number} limit - Nombre max de résultats
- */
-export const searchDeezer = async (query, limit = 20) => {
+export const searchDeezer = async (query, limit = 10) => {
   try {
     const res = await fetch(
       `${DEEZER_BASE}/search?q=${encodeURIComponent(query)}&limit=${limit}`,
     );
     const data = await res.json();
-    if (!data.data) {
-      return [];
-    }
-    return data.data
-      .filter(t => t.preview) // On ne garde que les titres avec preview
-      .map(normalizeDeezer);
+    return (data.data || []).map(normalizeDeezer);
   } catch (e) {
-    console.warn('[Deezer search] Erreur:', e.message);
     return [];
   }
 };
 
-/**
- * Récupère le top Afrobeats de Deezer (chart genre 116)
- */
-export const getDeezerAfrobeats = async (limit = 20) => {
-  try {
-    const res = await fetch(`${DEEZER_BASE}/chart/116/tracks?limit=${limit}`);
-    const data = await res.json();
-    if (!data.data) {
-      return [];
-    }
-    return data.data.filter(t => t.preview).map(normalizeDeezer);
-  } catch (e) {
-    console.warn('[Deezer afrobeats] Erreur:', e.message);
-    return [];
-  }
-};
-
-/**
- * Récupère le top mondial Deezer
- */
-export const getDeezerTopGlobal = async (limit = 20) => {
-  try {
-    const res = await fetch(`${DEEZER_BASE}/chart/0/tracks?limit=${limit}`);
-    const data = await res.json();
-    if (!data.data) {
-      return [];
-    }
-    return data.data.filter(t => t.preview).map(normalizeDeezer);
-  } catch (e) {
-    console.warn('[Deezer top] Erreur:', e.message);
-    return [];
-  }
-};
-
-/**
- * Récupère les titres d'un artiste Deezer
- * @param {string} artistName
- */
-export const getDeezerArtistTracks = async (artistName, limit = 10) => {
-  try {
-    const res = await fetch(
-      `${DEEZER_BASE}/search?q=artist:"${encodeURIComponent(
-        artistName,
-      )}"&limit=${limit}`,
-    );
-    const data = await res.json();
-    if (!data.data) {
-      return [];
-    }
-    return data.data.filter(t => t.preview).map(normalizeDeezer);
-  } catch (e) {
-    console.warn('[Deezer artist] Erreur:', e.message);
-    return [];
-  }
-};
-
-// ─────────────────────────────────────────
-// ITUNES API
-// ─────────────────────────────────────────
-
-/**
- * Recherche des titres via iTunes
- * @param {string} query
- * @param {number} limit
- */
-export const searchItunes = async (query, limit = 20) => {
+export const searchItunes = async (query, limit = 10) => {
   try {
     const res = await fetch(
       `${ITUNES_BASE}/search?term=${encodeURIComponent(
         query,
-      )}&media=music&limit=${limit}&entity=song`,
+      )}&limit=${limit}&entity=song`,
     );
     const data = await res.json();
-    if (!data.results) {
-      return [];
-    }
-    return data.results.filter(t => t.previewUrl).map(normalizeItunes);
+    return (data.results || []).map(normalizeItunes);
   } catch (e) {
-    console.warn('[iTunes search] Erreur:', e.message);
     return [];
   }
 };
 
-/**
- * Recherche les titres afrobeat sur iTunes
- */
-export const getItunesAfrobeats = async (limit = 20) => {
-  return searchItunes('afrobeats 2024', limit);
+// ─────────────────────────────────────────
+// SECTIONS HOME (Deezer)
+// ─────────────────────────────────────────
+
+export const getDeezerAfrobeats = async (limit = 10) => {
+  try {
+    const res = await fetch(
+      `${DEEZER_BASE}/search?q=afrobeats&limit=${limit}&order=RANKING`,
+    );
+    const data = await res.json();
+    return (data.data || []).map(normalizeDeezer);
+  } catch (e) {
+    return [];
+  }
+};
+
+export const getDeezerTopGlobal = async (limit = 10) => {
+  try {
+    const res = await fetch(`${DEEZER_BASE}/chart/0/tracks?limit=${limit}`);
+    const data = await res.json();
+    return (data.data || []).map(normalizeDeezer);
+  } catch (e) {
+    return [];
+  }
 };
 
 // ─────────────────────────────────────────
@@ -315,15 +254,52 @@ export const searchAll = async (query, limit = 10, source = 'all', sortBySource 
 };
 
 /**
- * Récupère les titres stockés dans la base de données Supabase via le backend
+ * Récupère les titres stockés dans la base de données Supabase DIRECTEMENT
+ * pour plus de rapidité (outre-passant le backend proxy)
  */
 export const getSupabaseSongs = async () => {
   try {
-    const res = await fetch(getApiUrl('/api/songs'));
-    return await res.json();
+    const {data, error} = await supabase
+      .from('tracks')
+      .select('*')
+      .order('created_at', {ascending: false})
+      .limit(20);
+    
+    if (error) throw error;
+    
+    return (data || []).map(track => ({
+      ...track,
+      id: track.id,
+      audioUrl: track.audio_url,
+      cover: track.cover_url,
+    }));
   } catch (e) {
-    console.warn('[Supabase songs] Erreur:', e.message);
+    console.warn('[Supabase songs direct] Erreur:', e.message);
     return [];
+  }
+};
+
+/**
+ * Récupère un titre par son ID
+ */
+export const getTrackById = async (trackId) => {
+  try {
+    const {data, error} = await supabase
+      .from('tracks')
+      .select('*')
+      .eq('id', trackId)
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      ...data,
+      audioUrl: data.audio_url,
+      cover: data.cover_url,
+    };
+  } catch (e) {
+    console.warn('[getTrackById] Erreur:', e.message);
+    return null;
   }
 };
 

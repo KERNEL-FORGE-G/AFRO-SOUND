@@ -1,4 +1,5 @@
 {
   "name": "AFROSOUND",
-  "displayName": "AFRO SOUND"
+  "displayName": "AFRO SOUND",
+  "scheme": "com.afrosound"
 }

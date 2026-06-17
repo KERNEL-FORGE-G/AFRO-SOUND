@@ -95,11 +95,53 @@ function MainTabs() {
   );
 }
 
+import {Linking} from 'react-native';
+import {SyncService} from '../services/syncService';
+
+const linking = {
+  prefixes: ['com.afrosound://', 'afrosound://'],
+  config: {
+    screens: {
+      MusicPage: 'playlist/:id',
+      NowPlaying: 'track/:trackId',
+      Home: 'home',
+      Profile: 'profile',
+    },
+  },
+  async getInitialURL() {
+    const url = await Linking.getInitialURL();
+    return url;
+  },
+  subscribe(listener) {
+    const onReceiveURL = ({url}) => listener(url);
+    const subscription = Linking.addEventListener('url', onReceiveURL);
+    return () => {
+      subscription.remove();
+    };
+  },
+};
+
 export default function AppNavigator() {
   const {user} = useAuth();
 
+  // Effet pour gérer l'ajout automatique lors d'un deep link de playlist
+  React.useEffect(() => {
+    const handleDeepLink = async (event) => {
+      const {url} = event;
+      if (url && url.includes('playlist/') && user) {
+        const playlistId = url.split('playlist/')[1];
+        if (playlistId) {
+          await SyncService.addMember(playlistId, user.id);
+        }
+      }
+    };
+
+    const sub = Linking.addEventListener('url', handleDeepLink);
+    return () => sub.remove();
+  }, [user]);
+
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer theme={navigationTheme} linking={linking}>
       <Stack.Navigator
         screenOptions={{
           headerShown: false,

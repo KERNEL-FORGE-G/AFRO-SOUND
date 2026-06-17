@@ -8,6 +8,7 @@
     "android": "react-native run-android --active-arch-only",
     "build:debug": "cd android && ./gradlew assembleDebug",
     "build:release": "cd android && ./gradlew assembleRelease",
+    "apk": "npm run build:release && cp android/app/build/outputs/apk/release/app-release.apk .",
     "setup:sdk": "bash scripts/setup-android-sdk.sh",
     "logo": "react-native set-icon --path './assets/images/logo.png' --platform android",
     "lint": "eslint .",

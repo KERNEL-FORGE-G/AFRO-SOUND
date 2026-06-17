@@ -73,7 +73,11 @@ export default function MusicPage({route, navigation}) {
       return;
     }
     await playTrack(tracks[0], tracks);
-    navigation.navigate('NowPlaying', {track: tracks[0]});
+    navigation.navigate('NowPlaying', {
+      track: tracks[0],
+      playlistId: item?.id,
+      ownerId: item?.user_id,
+    });
   };
 
   const handleQueueAll = async () => {
@@ -128,7 +132,11 @@ export default function MusicPage({route, navigation}) {
       style={styles.trackItem}
       onPress={async () => {
         await playTrack(track, tracks);
-        navigation.navigate('NowPlaying', {track});
+        navigation.navigate('NowPlaying', {
+          track,
+          playlistId: item?.id,
+          ownerId: item?.user_id,
+        });
       }}>
       <Image
         source={

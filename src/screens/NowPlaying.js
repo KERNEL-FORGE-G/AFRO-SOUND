@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import theme, {Colors} from '../theme';
+import theme, {Colors, Radius, Shadows} from '../theme';
 import {
   State,
   getPlaybackStateValue,
@@ -22,11 +22,13 @@ import {
 } from '../context/PlayerContext';
 import {supabase} from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
+import {SyncService} from '../services/syncService';
 import {
   addTrackToRemotePlaylist,
   fetchUserPlaylists,
   shareTrack,
 } from '../services/playlistService';
+import {getTrackById} from '../services/musicApi';
 
 const getArtwork = track => track?.artwork || track?.cover || track?.cover_url;
 const getArtist = track =>
@@ -42,6 +44,10 @@ const formatTime = secs => {
 export default function NowPlaying({navigation, route}) {
   const {user} = useAuth();
   const routeTrack = route.params?.track;
+  const trackId = route.params?.trackId; // ID depuis un deep link
+  const playlistId = route.params?.playlistId;
+  const ownerId = route.params?.ownerId;
+
   const {
     addToQueue,
     clearQueue,
@@ -52,14 +58,16 @@ export default function NowPlaying({navigation, route}) {
     queueIndex,
     removeFromQueue,
     repeatMode,
+    toggleRepeat,
+    isShuffle,
+    toggleShuffle,
+    playTrack,
+    togglePlayback,
     seekTo,
     skipToNext,
     skipToPrevious,
-    togglePlayback,
-    toggleRepeat,
-    toggleShuffle,
-    isShuffle,
   } = usePlayer();
+
   const playbackState = usePlaybackState();
   const {position, duration} = useProgress(500);
   const [isLiked, setIsLiked] = useState(false);
@@ -69,13 +77,59 @@ export default function NowPlaying({navigation, route}) {
   const [queueModalVisible, setQueueModalVisible] = useState(false);
   const [userPlaylists, setUserPlaylists] = useState([]);
   const [isLoadingPlaylists, setIsLoadingPlaylists] = useState(false);
+  const [loadingTrack, setLoadingTrack] = useState(false);
 
+  // Détermination du track à afficher
   const track = currentTrack || routeTrack || {};
   const playbackStateValue = getPlaybackStateValue(playbackState);
   const isPlaying = playbackStateValue === State.Playing;
   const displayedPosition = isSeeking ? seekPreview : position;
   const displayedDuration = duration || track.duration || 0;
   const artwork = getArtwork(track);
+
+  // Gestion du chargement par ID (Deep Link)
+  useEffect(() => {
+    if (trackId && !routeTrack && !currentTrack) {
+      loadTrackById(trackId);
+    }
+  }, [trackId]);
+
+  const loadTrackById = async (id) => {
+    setLoadingTrack(true);
+    try {
+      const data = await getTrackById(id);
+      if (data) {
+        await playTrack(data);
+      } else {
+        Alert.alert('Erreur', 'Impossible de trouver ce titre.');
+      }
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      setLoadingTrack(false);
+    }
+  };
+
+  // Synchronisation en temps réel (Lecture simultanée)
+  useEffect(() => {
+    if (playlistId && user) {
+      SyncService.joinSession(playlistId, user.id, ownerId);
+    }
+    return () => SyncService.leaveSession();
+  }, [playlistId, user, ownerId]);
+
+  // Diffusion de l'état (si Host)
+  useEffect(() => {
+    let interval = null;
+    if (playlistId && user?.id === ownerId && isPlaying) {
+      interval = setInterval(() => {
+        SyncService.broadcastState(track, position, isPlaying);
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [playlistId, user, ownerId, track, position, isPlaying]);
 
   const spinValue = useRef(new Animated.Value(0)).current;
   const spinAnimation = useRef(null);
@@ -149,6 +203,16 @@ export default function NowPlaying({navigation, route}) {
     }
   };
 
+  const handleAddToPlaylist = async pid => {
+    try {
+      await addTrackToRemotePlaylist(pid, track);
+      Alert.alert('Succès', 'Ajouté à la playlist !');
+      setPlaylistModalVisible(false);
+    } catch (error) {
+      Alert.alert('Erreur', error.message);
+    }
+  };
+
   const toggleLike = async () => {
     if (!user) {
       Alert.alert('Connexion requise', 'Connectez-vous pour liker ce titre.');
@@ -170,18 +234,20 @@ export default function NowPlaying({navigation, route}) {
         return;
       }
 
-      await supabase.from('tracks').upsert([
+      // Upsert track info to DB
+      const {error: trackError} = await supabase.from('tracks').upsert([
         {
           id: track.id,
           title: track.title,
           artist: getArtist(track),
           album: track.album || '',
-          cover_url: track.artwork || track.cover || track.cover_url,
+          cover_url: artwork,
           audio_url: track.url || track.audioUrl,
           source: track.source,
           duration: track.duration,
         },
       ]);
+      if (trackError) throw trackError;
 
       const {error} = await supabase.from('favorites').insert([
         {
@@ -209,7 +275,7 @@ export default function NowPlaying({navigation, route}) {
     try {
       await skipToPrevious();
     } catch (error) {
-      Alert.alert('Précédent', 'Aucune piste précédente dans la file.');
+      console.warn(error);
     }
   };
 
@@ -217,27 +283,7 @@ export default function NowPlaying({navigation, route}) {
     try {
       await skipToNext();
     } catch (error) {
-      Alert.alert('Suivant', 'Aucune piste suivante dans la file.');
-    }
-  };
-
-  const handleAddCurrentTrackToQueue = async () => {
-    const added = await addToQueue(track);
-    if (added) {
-      Alert.alert('File mise à jour', 'Le titre a été ajouté à la file.');
-    }
-  };
-
-  const handleAddToPlaylist = async playlistId => {
-    try {
-      await addTrackToRemotePlaylist(playlistId, track);
-      setPlaylistModalVisible(false);
-      Alert.alert(
-        'Playlist mise à jour',
-        'Le titre a été ajouté à la playlist.',
-      );
-    } catch (error) {
-      Alert.alert('Erreur', error.message);
+      console.warn(error);
     }
   };
 
@@ -245,20 +291,15 @@ export default function NowPlaying({navigation, route}) {
     try {
       await shareTrack(track);
     } catch (error) {
-      Alert.alert('Partage impossible', error.message);
+      console.warn(error);
     }
   };
 
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
   const bottomActions = [
     {
-      icon: isLiked ? 'heart' : 'heart-outline',
-      label: 'Favori',
-      onPress: toggleLike,
+      icon: 'list-outline',
+      label: 'File',
+      onPress: () => setQueueModalVisible(true),
     },
     {
       icon: 'add-circle-outline',
@@ -266,9 +307,9 @@ export default function NowPlaying({navigation, route}) {
       onPress: openPlaylistModal,
     },
     {
-      icon: 'list-outline',
-      label: 'File',
-      onPress: () => setQueueModalVisible(true),
+      icon: 'musical-notes-outline',
+      label: 'Paroles',
+      onPress: () => navigation.navigate('Lyrics'),
     },
     {
       icon: 'download-outline',
@@ -282,6 +323,14 @@ export default function NowPlaying({navigation, route}) {
     },
   ];
 
+  if (loadingTrack) {
+    return (
+      <View style={[theme.container, {justifyContent: 'center'}]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <View style={theme.container}>
       <View style={styles.header}>
@@ -291,6 +340,7 @@ export default function NowPlaying({navigation, route}) {
           style={styles.headerIcon}>
           <Ionicons name="chevron-back" size={28} color={Colors.primary} />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>Lecteur</Text>
         <TouchableOpacity
           activeOpacity={0.8}
           style={styles.headerIcon}
@@ -306,117 +356,126 @@ export default function NowPlaying({navigation, route}) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.artContainer}>
-        <Animated.Image
-          source={artwork ? {uri: artwork} : require('../../logo.png')}
-          style={[styles.art, {transform: [{rotate: spin}]}]}
-        />
-      </View>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.artContainer}>
+          <Animated.Image
+            source={artwork ? {uri: artwork} : require('../../logo.png')}
+            style={[styles.art, {transform: [{rotate: spin}]}]}
+          />
+        </View>
 
-      <View style={styles.trackInfo}>
-        <View style={styles.titleRow}>
-          <View style={styles.titleBlock}>
-            <Text style={styles.trackTitle} numberOfLines={2}>
-              {track.title || 'Titre inconnu'}
+        <View style={styles.trackInfo}>
+          <Text style={styles.trackTitle} numberOfLines={2}>
+            {track.title || 'Titre inconnu'}
+          </Text>
+          <View style={styles.artistRow}>
+            <Text style={styles.trackArtist} numberOfLines={1}>
+              {getArtist(track)}
             </Text>
-            <View style={styles.artistRow}>
-              <Text style={styles.trackArtist} numberOfLines={1}>
-                {getArtist(track)}
-              </Text>
-              <TouchableOpacity onPress={toggleLike}>
-                <Ionicons
-                  name={isLiked ? 'heart' : 'heart-outline'}
-                  size={22}
-                  color={Colors.primary}
-                />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={toggleLike} style={styles.likeIcon}>
+              <Ionicons
+                name={isLiked ? 'heart' : 'heart-outline'}
+                size={24}
+                color={Colors.primary}
+              />
+            </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-      <View style={styles.progressSection}>
-        <Slider
-          style={styles.slider}
-          minimumValue={0}
-          maximumValue={Math.max(displayedDuration, 1)}
-          value={Math.min(displayedPosition, Math.max(displayedDuration, 1))}
-          onValueChange={value => {
-            setIsSeeking(true);
-            setSeekPreview(value);
-          }}
-          onSlidingComplete={handleSeekComplete}
-          minimumTrackTintColor={Colors.primary}
-          maximumTrackTintColor={Colors.accent}
-          thumbTintColor={Colors.primary}
-        />
-        <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(displayedPosition)}</Text>
-          <Text style={styles.timeText}>{formatTime(displayedDuration)}</Text>
+        <View style={styles.progressSection}>
+          <Slider
+            style={styles.slider}
+            minimumValue={0}
+            maximumValue={Math.max(displayedDuration, 1)}
+            value={Math.min(displayedPosition, Math.max(displayedDuration, 1))}
+            onValueChange={value => {
+              setIsSeeking(true);
+              setSeekPreview(value);
+            }}
+            onSlidingComplete={handleSeekComplete}
+            minimumTrackTintColor={Colors.primary}
+            maximumTrackTintColor={Colors.borderStrong}
+            thumbTintColor={Colors.primary}
+          />
+          <View style={styles.timeRow}>
+            <Text style={styles.timeText}>{formatTime(displayedPosition)}</Text>
+            <Text style={styles.timeText}>{formatTime(displayedDuration)}</Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.controls}>
-        <TouchableOpacity onPress={toggleShuffle}>
-          <Ionicons
-            name="shuffle"
-            size={26}
-            color={isShuffle ? Colors.primary : Colors.muted}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.smallBtn} onPress={handleSkipPrevious}>
-          <Ionicons name="play-skip-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.bigBtn} onPress={togglePlayback}>
-          <Ionicons
-            name={isPlaying ? 'pause' : 'play'}
-            size={40}
-            color={Colors.background}
-            style={isPlaying ? styles.playIconPaused : styles.playIcon}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.smallBtn} onPress={handleSkipNext}>
-          <Ionicons name="play-skip-forward" size={24} color={Colors.text} />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={toggleRepeat} style={styles.repeatButton}>
-          <Ionicons
-            name="repeat"
-            size={26}
-            color={repeatMode === 'off' ? Colors.muted : Colors.primary}
-          />
-          {repeatMode === 'one' && (
-            <View style={styles.repeatBadge}>
-              <Text style={styles.repeatBadgeText}>1</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.bottomActions}>
-        {bottomActions.map(action => (
-          <TouchableOpacity
-            key={action.label}
-            style={styles.actionBtn}
-            onPress={action.onPress}
-            activeOpacity={0.8}>
-            <Ionicons name={action.icon} size={20} color={Colors.primary} />
-            <Text style={styles.actionLabel}>{action.label}</Text>
+        <View style={styles.controls}>
+          <TouchableOpacity onPress={toggleShuffle} style={styles.controlSmall}>
+            <Ionicons
+              name="shuffle"
+              size={24}
+              color={isShuffle ? Colors.primary : Colors.muted}
+            />
           </TouchableOpacity>
-        ))}
-      </View>
 
-      <View style={styles.queueHint}>
-        <Text style={styles.queueHintText}>
-          File active: {queueIndex + 1}/{Math.max(queue.length, 1)}
-        </Text>
-        <TouchableOpacity onPress={handleAddCurrentTrackToQueue}>
-          <Text style={styles.queueHintAction}>Dupliquer dans la file</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity style={styles.controlBtn} onPress={handleSkipPrevious}>
+            <Ionicons name="play-skip-back" size={28} color={Colors.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.bigBtn} onPress={togglePlayback}>
+            <Ionicons
+              name={isPlaying ? 'pause' : 'play'}
+              size={44}
+              color={Colors.background}
+              style={isPlaying ? null : {marginLeft: 4}}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.controlBtn} onPress={handleSkipNext}>
+            <Ionicons name="play-skip-forward" size={28} color={Colors.text} />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={toggleRepeat} style={styles.controlSmall}>
+            <Ionicons
+              name="repeat"
+              size={24}
+              color={repeatMode === 'off' ? Colors.muted : Colors.primary}
+            />
+            {repeatMode === 'one' && (
+              <View style={styles.repeatBadge}>
+                <Text style={styles.repeatBadgeText}>1</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.actionsContainer}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.bottomActions}
+          >
+            {bottomActions.map((action, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.actionBtn}
+                onPress={action.onPress}
+                activeOpacity={0.7}>
+                <View style={styles.actionIconContainer}>
+                  <Ionicons name={action.icon} size={22} color={Colors.primary} />
+                </View>
+                <Text style={styles.actionLabel}>{action.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        <View style={styles.queueHint}>
+          <Text style={styles.queueHintText}>
+            File active: {queueIndex + 1}/{Math.max(queue.length, 1)}
+          </Text>
+          <TouchableOpacity onPress={() => setQueueModalVisible(true)}>
+            <Text style={styles.queueHintAction}>Afficher la file</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
 
       <Modal
         visible={playlistModalVisible}
@@ -427,7 +486,7 @@ export default function NowPlaying({navigation, route}) {
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Ajouter à une playlist</Text>
             {isLoadingPlaylists ? (
-              <Text style={styles.modalEmpty}>Chargement...</Text>
+              <ActivityIndicator size="small" color={Colors.primary} style={{margin: 20}} />
             ) : userPlaylists.length === 0 ? (
               <Text style={styles.modalEmpty}>
                 Aucune playlist disponible. Créez-en une dans Bibliothèque.
@@ -529,235 +588,241 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingTop: 48,
-    paddingBottom: 8,
+    paddingBottom: 16,
+    backgroundColor: Colors.background,
   },
-  headerIcon: {width: 40, alignItems: 'center'},
-  artContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 8,
+  headerIcon: {
+    width: 44,
+    height: 44,
     alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    backgroundColor: Colors.surface,
+  },
+  headerTitle: {
+    color: Colors.text,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  scrollContent: {
+    paddingBottom: 40,
+  },
+  artContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 24,
+    paddingHorizontal: 24,
   },
   art: {
-    width: 320,
-    height: 320,
-    borderRadius: 24,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
+    borderWidth: 8,
+    borderColor: Colors.surfaceLight,
   },
   trackInfo: {
     paddingHorizontal: 24,
-    marginTop: 20,
+    alignItems: 'center',
+    marginBottom: 24,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  titleBlock: {flex: 1},
   trackTitle: {
     color: Colors.text,
-    fontSize: 28,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
     textAlign: 'center',
+    marginBottom: 8,
   },
   artistRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: 6,
+    gap: 12,
   },
   trackArtist: {
     color: Colors.primary,
     fontSize: 18,
     fontWeight: '600',
-    maxWidth: '85%',
+  },
+  likeIcon: {
+    padding: 4,
   },
   progressSection: {
     paddingHorizontal: 24,
-    marginTop: 16,
+    marginBottom: 32,
   },
   slider: {
     width: '100%',
     height: 40,
-    marginVertical: -8,
   },
   timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 2,
+    marginTop: -4,
+    paddingHorizontal: 4,
   },
   timeText: {
     color: Colors.muted,
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 20,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
+    marginBottom: 40,
   },
-  smallBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  controlBtn: {
+    width: 50,
+    height: 50,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   bigBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    ...Shadows.glow,
   },
-  playIcon: {
-    marginLeft: 4,
-  },
-  playIconPaused: {
-    marginLeft: 0,
-  },
-  repeatButton: {
-    width: 36,
+  controlSmall: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  bottomActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 28,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    flexWrap: 'wrap',
-    rowGap: 10,
-  },
-  actionBtn: {
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    minWidth: 72,
-  },
-  actionLabel: {
-    color: Colors.primary,
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 4,
+    position: 'relative',
   },
   repeatBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: 4,
+    right: 4,
     backgroundColor: Colors.primary,
-    borderRadius: 6,
-    width: 12,
-    height: 12,
-    justifyContent: 'center',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   repeatBadgeText: {
     color: Colors.background,
-    fontSize: 8,
-    fontWeight: 'bold',
+    fontSize: 9,
+    fontWeight: '900',
   },
-  queueHint: {
+  actionsContainer: {
+    marginBottom: 32,
+  },
+  bottomActions: {
     paddingHorizontal: 24,
-    alignItems: 'center',
-    gap: 6,
+    gap: 16,
   },
-  queueHintText: {
+  actionBtn: {
+    alignItems: 'center',
+    width: 80,
+  },
+  actionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  actionLabel: {
     color: Colors.textSoft,
     fontSize: 12,
     fontWeight: '600',
   },
+  queueHint: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  queueHintText: {
+    color: Colors.muted,
+    fontSize: 13,
+  },
   queueHintAction: {
     color: Colors.primary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(0,0,0,0.8)',
     justifyContent: 'flex-end',
   },
   modalSheet: {
-    backgroundColor: Colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 28,
-    maxHeight: '70%',
+    backgroundColor: Colors.backgroundElevated,
+    borderTopLeftRadius: Radius.xl,
+    borderTopRightRadius: Radius.xl,
+    padding: 24,
+    maxHeight: '80%',
   },
   modalTitle: {
     color: Colors.text,
     fontSize: 20,
     fontWeight: '800',
-    marginBottom: 16,
-  },
-  modalEmpty: {
-    color: Colors.textSoft,
-    lineHeight: 22,
-    marginBottom: 18,
+    marginBottom: 20,
   },
   modalItem: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   modalItemMain: {
     flex: 1,
-    paddingRight: 12,
   },
   modalItemTitle: {
     color: Colors.text,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
   modalItemMeta: {
-    color: Colors.textSoft,
+    color: Colors.muted,
     fontSize: 12,
-    marginTop: 5,
+    marginTop: 2,
+  },
+  modalEmpty: {
+    color: Colors.muted,
+    textAlign: 'center',
+    marginVertical: 40,
+  },
+  modalClose: {
+    marginTop: 20,
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+  },
+  modalCloseText: {
+    color: Colors.text,
+    fontWeight: '700',
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 18,
     gap: 12,
-  },
-  modalClose: {
-    marginTop: 18,
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-    flex: 1,
-  },
-  modalCloseText: {
-    color: Colors.background,
-    fontWeight: '800',
+    marginTop: 10,
   },
   clearBtn: {
-    marginTop: 18,
-    borderWidth: 1,
-    borderColor: Colors.borderStrong,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
     flex: 1,
+    marginTop: 20,
+    alignItems: 'center',
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.danger,
+    borderRadius: Radius.lg,
   },
   clearBtnText: {
-    color: Colors.text,
+    color: Colors.danger,
     fontWeight: '700',
   },
 });

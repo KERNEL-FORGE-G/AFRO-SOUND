@@ -66,7 +66,7 @@ export const Shadows = {
   },
 };
 
-export default StyleSheet.create({
+const theme = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -88,3 +88,5 @@ export default StyleSheet.create({
     ...Shadows.soft,
   },
 });
+
+export default theme;
