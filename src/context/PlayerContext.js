@@ -1,107 +1,467 @@
-/**
- * PlayerContext.js - Contexte global de lecture AFRO SOUND
- */
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import TrackPlayer, { Capability, RepeatMode, State, usePlaybackState, useProgress } from 'react-native-track-player';
-import { downloadTrack } from '../services/downloadService';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {Alert, Platform} from 'react-native';
+import TrackPlayer, {
+  AppKilledPlaybackBehavior,
+  Capability,
+  Event,
+  RepeatMode,
+  State,
+  usePlaybackState,
+  useProgress,
+  useTrackPlayerEvents,
+} from 'react-native-track-player';
+import RNFetchBlob from 'rn-fetch-blob';
 
 const PlayerContext = createContext(null);
 
-let playerReady = false;
+let playerSetupPromise = null;
 
 const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl;
-const getTrackArtwork = track => track?.cover || track?.cover_url || track?.artwork || '';
-const getTrackArtist = track => track?.artist || track?.artist_name || 'Artiste inconnu';
+const getTrackArtwork = track =>
+  track?.artwork || track?.cover || track?.cover_url || '';
+const getTrackArtist = track =>
+  track?.artist || track?.artist_name || 'Artiste inconnu';
+const getTrackAlbum = track => track?.album || track?.collectionName || '';
+const getTrackDuration = track => {
+  const duration = Number(track?.duration);
+  return Number.isFinite(duration) && duration > 0 ? duration : 30;
+};
+
+export const getPlaybackStateValue = playbackState =>
+  playbackState && typeof playbackState === 'object' && 'state' in playbackState
+    ? playbackState.state
+    : playbackState;
 
 const normalizeTrack = track => ({
-  id: String(track.id || track.url || track.audioUrl || track.title),
+  ...track,
+  id: String(track?.id || getTrackUrl(track) || track?.title || Date.now()),
   url: getTrackUrl(track),
-  title: track.title || 'Titre inconnu',
+  title: track?.title || 'Titre inconnu',
   artist: getTrackArtist(track),
-  album: track.album || '',
+  album: getTrackAlbum(track),
   artwork: getTrackArtwork(track),
-  duration: track.duration || 30,
+  duration: getTrackDuration(track),
+  source: track?.source || 'local',
 });
 
+const buildDownloadName = track => {
+  const rawName = `${track?.artist || 'artiste'}-${track?.title || 'titre'}`;
+  return rawName.replace(/[^\w.-]+/g, '_');
+};
+
 const setupPlayer = async () => {
-  if (playerReady) return;
-  try {
-    await TrackPlayer.setupPlayer();
-    await TrackPlayer.updateOptions({
-      capabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext, Capability.SkipToPrevious, Capability.SeekTo, Capability.Stop],
-      compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext, Capability.SkipToPrevious],
-      notificationCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext, Capability.SkipToPrevious],
-    });
-    playerReady = true;
-  } catch (e) {
-    playerReady = true;
+  if (!playerSetupPromise) {
+    playerSetupPromise = (async () => {
+      try {
+        await TrackPlayer.setupPlayer();
+      } catch (error) {
+        const message = error?.message || '';
+        if (!message.toLowerCase().includes('already been initialized')) {
+          throw error;
+        }
+      }
+
+      await TrackPlayer.updateOptions({
+        capabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+          Capability.SeekTo,
+          Capability.Stop,
+        ],
+        compactCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+        ],
+        notificationCapabilities: [
+          Capability.Play,
+          Capability.Pause,
+          Capability.SkipToNext,
+          Capability.SkipToPrevious,
+          Capability.SeekTo,
+          Capability.Stop,
+        ],
+        progressUpdateEventInterval: 1,
+        android: {
+          appKilledPlaybackBehavior:
+            AppKilledPlaybackBehavior?.StopPlaybackAndRemoveNotification,
+        },
+        icon: require('../../logo.png'),
+      });
+
+      await TrackPlayer.setRepeatMode(RepeatMode.Off);
+    })();
   }
+
+  return playerSetupPromise;
 };
 
 export function PlayerProvider({children}) {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [queue, setQueue] = useState([]);
-  const playbackState = usePlaybackState();
-  const isPlaying = playbackState?.state === State.Playing;
+  const [queueIndex, setQueueIndex] = useState(0);
   const [repeatMode, setRepeatMode] = useState('off');
   const [isShuffle, setIsShuffle] = useState(false);
+  const queueRef = useRef([]);
+  const repeatModeRef = useRef('off');
+  const shuffleRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const toggleRepeat = useCallback(async () => {
-    const modes = ['off', 'on', 'one'];
-    const current = modes.indexOf(repeatMode);
-    const nextMode = modes[(current + 1) % modes.length];
-    setRepeatMode(nextMode);
-    let trackPlayerMode = RepeatMode.Queue;
-    if (nextMode === 'one') trackPlayerMode = RepeatMode.Track;
-    else if (nextMode === 'off') trackPlayerMode = RepeatMode.Off;
-    await TrackPlayer.setRepeatMode(trackPlayerMode);
+  const syncQueueState = useCallback(async () => {
+    const activeTrack = await TrackPlayer.getActiveTrack();
+    const activeIndex = await TrackPlayer.getActiveTrackIndex();
+    const trackQueue = await TrackPlayer.getQueue();
+
+    if (!mountedRef.current) {
+      return;
+    }
+
+    queueRef.current = trackQueue;
+    setQueue(trackQueue);
+    setCurrentTrack(activeTrack || null);
+    setQueueIndex(activeIndex >= 0 ? activeIndex : 0);
+  }, []);
+
+  useEffect(() => {
+    repeatModeRef.current = repeatMode;
   }, [repeatMode]);
 
-  const toggleShuffle = useCallback(async () => setIsShuffle(!isShuffle), [isShuffle]);
+  useEffect(() => {
+    shuffleRef.current = isShuffle;
+  }, [isShuffle]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    setupPlayer()
+      .then(syncQueueState)
+      .catch(error => {
+        console.warn('[PlayerProvider] setup error:', error?.message || error);
+      });
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, [syncQueueState]);
+
+  useTrackPlayerEvents(
+    [Event.PlaybackActiveTrackChanged, Event.PlaybackQueueEnded],
+    async event => {
+      if (event.type === Event.PlaybackActiveTrackChanged) {
+        const nextTrack =
+          event.track ||
+          (typeof event.index === 'number'
+            ? queueRef.current[event.index]
+            : null);
+        if (nextTrack) {
+          setCurrentTrack(nextTrack);
+        }
+        if (typeof event.index === 'number' && event.index >= 0) {
+          setQueueIndex(event.index);
+        }
+      }
+
+      if (
+        event.type === Event.PlaybackQueueEnded &&
+        event.position > 0 &&
+        repeatModeRef.current === 'one' &&
+        currentTrack
+      ) {
+        try {
+          await TrackPlayer.seekTo(0);
+          await TrackPlayer.play();
+        } catch (error) {
+          console.warn('[PlayerProvider] repeat one error:', error?.message);
+        }
+      }
+    },
+  );
 
   const playTrack = useCallback(async (track, tracks = []) => {
+    const baseQueue =
+      Array.isArray(tracks) && tracks.length > 0
+        ? tracks
+        : [track].filter(Boolean);
+    const normalizedQueue = baseQueue
+      .map(normalizeTrack)
+      .filter(item => item.url && item.id);
+
+    if (normalizedQueue.length === 0) {
+      Alert.alert('Lecture impossible', "Aucun flux audio n'est disponible.");
+      return;
+    }
+
+    const normalizedTrack = normalizeTrack(track);
+    const initialIndex = Math.max(
+      normalizedQueue.findIndex(item => item.id === normalizedTrack.id),
+      0,
+    );
+
+    const nextQueue = shuffleRef.current
+      ? [
+          normalizedQueue[initialIndex],
+          ...normalizedQueue
+            .filter(item => item.id !== normalizedTrack.id)
+            .sort(() => Math.random() - 0.5),
+        ]
+      : normalizedQueue;
+
+    const nextIndex = shuffleRef.current
+      ? 0
+      : Math.max(
+          nextQueue.findIndex(item => item.id === normalizedTrack.id),
+          initialIndex,
+        );
+
     await setupPlayer();
-    const tracksToLoad = tracks.length > 0 ? tracks : [track];
-    const normalizedTracks = tracksToLoad.map(normalizeTrack);
     await TrackPlayer.reset();
-    await TrackPlayer.add(normalizedTracks);
-    const trackIndex = normalizedTracks.findIndex(t => t.id === normalizeTrack(track).id);
-    if (trackIndex !== -1) await TrackPlayer.skip(trackIndex);
+    await TrackPlayer.add(nextQueue);
+    if (nextIndex > 0) {
+      await TrackPlayer.skip(nextIndex);
+    }
     await TrackPlayer.play();
-    setQueue(tracksToLoad);
-    setCurrentTrack(track);
+
+    queueRef.current = nextQueue;
+    setQueue(nextQueue);
+    setQueueIndex(nextIndex);
+    setCurrentTrack(nextQueue[nextIndex] || nextQueue[0] || null);
   }, []);
 
   const togglePlayback = useCallback(async () => {
-    if (playbackState?.state === State.Playing) await TrackPlayer.pause();
-    else await TrackPlayer.play();
-  }, [playbackState]);
+    await setupPlayer();
+    const playbackState = getPlaybackStateValue(
+      await TrackPlayer.getPlaybackState(),
+    );
 
-  const seekTo = useCallback(async (pos) => await TrackPlayer.seekTo(pos), []);
+    if (playbackState === State.Playing) {
+      await TrackPlayer.pause();
+      return;
+    }
+
+    await TrackPlayer.play();
+  }, []);
+
+  const seekTo = useCallback(async position => {
+    await setupPlayer();
+    await TrackPlayer.seekTo(position);
+  }, []);
 
   const skipToNext = useCallback(async () => {
-    await TrackPlayer.skipToNext();
-    const track = await TrackPlayer.getActiveTrack();
-    setCurrentTrack(track);
-  }, []);
+    await setupPlayer();
+    try {
+      await TrackPlayer.skipToNext();
+    } catch (error) {
+      if (repeatModeRef.current === 'on' && queueRef.current.length > 0) {
+        await TrackPlayer.skip(0);
+        await TrackPlayer.play();
+        return;
+      }
+      throw error;
+    }
+
+    await TrackPlayer.play();
+    await syncQueueState();
+  }, [syncQueueState]);
 
   const skipToPrevious = useCallback(async () => {
-    await TrackPlayer.skipToPrevious();
-    const track = await TrackPlayer.getActiveTrack();
-    setCurrentTrack(track);
+    await setupPlayer();
+
+    try {
+      await TrackPlayer.skipToPrevious();
+    } catch (error) {
+      if (repeatModeRef.current === 'on' && queueRef.current.length > 0) {
+        await TrackPlayer.skip(queueRef.current.length - 1);
+        await TrackPlayer.play();
+        return;
+      }
+      throw error;
+    }
+
+    await TrackPlayer.play();
+    await syncQueueState();
+  }, [syncQueueState]);
+
+  const addToQueue = useCallback(async track => {
+    const normalizedTrack = normalizeTrack(track);
+    if (!normalizedTrack.url) {
+      Alert.alert('Ajout impossible', "Ce titre n'a pas de source audio.");
+      return false;
+    }
+
+    await setupPlayer();
+    await TrackPlayer.add(normalizedTrack);
+    const nextQueue = [...queueRef.current, normalizedTrack];
+    queueRef.current = nextQueue;
+    setQueue(nextQueue);
+    return true;
   }, []);
 
+  const removeFromQueue = useCallback(
+    async trackId => {
+      await setupPlayer();
+      const index = queueRef.current.findIndex(track => track.id === trackId);
+      if (index < 0) {
+        return;
+      }
+      await TrackPlayer.remove([index]);
+      await syncQueueState();
+    },
+    [syncQueueState],
+  );
+
+  const playFromQueue = useCallback(
+    async index => {
+      await setupPlayer();
+      await TrackPlayer.skip(index);
+      await TrackPlayer.play();
+      await syncQueueState();
+    },
+    [syncQueueState],
+  );
+
+  const clearQueue = useCallback(async () => {
+    await setupPlayer();
+    await TrackPlayer.reset();
+    queueRef.current = [];
+    setQueue([]);
+    setQueueIndex(0);
+    setCurrentTrack(null);
+  }, []);
+
+  const toggleRepeat = useCallback(async () => {
+    const modes = ['off', 'on', 'one'];
+    const currentIndex = modes.indexOf(repeatModeRef.current);
+    const nextMode = modes[(currentIndex + 1) % modes.length];
+
+    let trackPlayerRepeatMode = RepeatMode.Off;
+    if (nextMode === 'on') {
+      trackPlayerRepeatMode = RepeatMode.Queue;
+    }
+    if (nextMode === 'one') {
+      trackPlayerRepeatMode = RepeatMode.Track;
+    }
+
+    await setupPlayer();
+    await TrackPlayer.setRepeatMode(trackPlayerRepeatMode);
+    setRepeatMode(nextMode);
+  }, []);
+
+  const toggleShuffle = useCallback(() => {
+    setIsShuffle(previousValue => !previousValue);
+  }, []);
+
+  const downloadTrack = useCallback(async track => {
+    const normalizedTrack = normalizeTrack(track);
+    if (!normalizedTrack.url) {
+      Alert.alert('Téléchargement impossible', 'Titre sans URL audio.');
+      return null;
+    }
+
+    const directories = RNFetchBlob?.fs?.dirs || {};
+    const baseDir =
+      Platform.OS === 'android'
+        ? directories.DownloadDir || directories.DocumentDir
+        : directories.DocumentDir;
+
+    if (!baseDir) {
+      Alert.alert('Téléchargement impossible', 'Répertoire introuvable.');
+      return null;
+    }
+
+    const extension =
+      normalizedTrack.url.split('.').pop()?.split('?')[0] || 'mp3';
+    const path = `${baseDir}/${buildDownloadName(
+      normalizedTrack,
+    )}.${extension}`;
+
+    try {
+      const response = await RNFetchBlob.config({
+        path,
+        fileCache: true,
+        addAndroidDownloads:
+          Platform.OS === 'android'
+            ? {
+                useDownloadManager: true,
+                notification: true,
+                path,
+                title: normalizedTrack.title,
+                description: 'Téléchargement AFRO SOUND',
+                mime: 'audio/mpeg',
+              }
+            : undefined,
+      }).fetch('GET', normalizedTrack.url);
+
+      Alert.alert('Téléchargement lancé', normalizedTrack.title);
+      return response.path?.() || path;
+    } catch (error) {
+      Alert.alert('Erreur', error?.message || 'Le téléchargement a échoué.');
+      return null;
+    }
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      currentTrack,
+      queue,
+      queueIndex,
+      playTrack,
+      togglePlayback,
+      seekTo,
+      skipToNext,
+      skipToPrevious,
+      repeatMode,
+      toggleRepeat,
+      isShuffle,
+      toggleShuffle,
+      addToQueue,
+      removeFromQueue,
+      playFromQueue,
+      clearQueue,
+      downloadTrack,
+    }),
+    [
+      addToQueue,
+      clearQueue,
+      currentTrack,
+      downloadTrack,
+      isShuffle,
+      playFromQueue,
+      playTrack,
+      queue,
+      queueIndex,
+      removeFromQueue,
+      repeatMode,
+      seekTo,
+      skipToNext,
+      skipToPrevious,
+      togglePlayback,
+      toggleRepeat,
+      toggleShuffle,
+    ],
+  );
+
   return (
-    <PlayerContext.Provider value={{ currentTrack, queue, isPlaying, playTrack, togglePlayback, seekTo, skipToNext, skipToPrevious, repeatMode, toggleRepeat, isShuffle, toggleShuffle, downloadTrack }}>
-      {children}
-    </PlayerContext.Provider>
+    <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>
   );
 }
 
+export {State, usePlaybackState, useProgress};
+
 export const usePlayer = () => {
   const ctx = useContext(PlayerContext);
-  if (!ctx) throw new Error('usePlayer must be inside PlayerProvider');
+  if (!ctx) {
+    throw new Error('usePlayer must be inside PlayerProvider');
+  }
   return ctx;
 };
-
-export { useProgress, State };
