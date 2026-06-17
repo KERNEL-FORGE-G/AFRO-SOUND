@@ -221,6 +221,62 @@ app.post('/api/tracks/upsert', async (req, res) => {
   }
 });
 
+// Metadata handler for deep links
+app.get(['/track/:id', '/playlist/:id'], async (req, res) => {
+  const path = req.path;
+  const id = req.params.id;
+  const isTrack = path.startsWith('/track/');
+  
+  let title = 'AFRO SOUND';
+  let description = 'Découvrez du contenu sur AFRO SOUND';
+  let image = 'https://afro-sound.vercel.app/logo.png'; // Fallback
+
+  try {
+    if (supabase) {
+      if (isTrack) {
+        const {data} = await supabase.from('tracks').select('title, artist, cover_url').eq('id', id).maybeSingle();
+        if (data) {
+          title = data.title;
+          description = `Écoutez ${data.artist || ''} sur AFRO SOUND`;
+          image = data.cover_url || image;
+        }
+      } else {
+        const {data} = await supabase.from('playlists').select('name').eq('id', id).maybeSingle();
+        if (data) {
+          title = data.name;
+          description = `Rejoignez ma playlist sur AFRO SOUND`;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Metadata fetch error:', e.message);
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${title}</title>
+        <meta property="og:title" content="${title}" />
+        <meta property="og:description" content="${description}" />
+        <meta property="og:image" content="${image}" />
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta http-equiv="refresh" content="0;url=afrosound://${isTrack ? 'track' : 'playlist'}/${id}" />
+      </head>
+      <body>
+        <h1>${title}</h1>
+        <p>Redirection vers l'application AFRO SOUND...</p>
+        <script>
+          setTimeout(() => {
+            window.location.href = "afrosound://${isTrack ? 'track' : 'playlist'}/${id}";
+          }, 1000);
+        </script>
+      </body>
+    </html>
+  `;
+  res.set('Content-Type', 'text/html; charset=utf-8').send(html);
+});
+
 // --- ADMIN ROUTES (Protected) ---
 
 app.get('/api/admin/ping/supabase', auth, async (req, res) => {
