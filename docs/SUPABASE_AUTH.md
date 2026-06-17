@@ -15,12 +15,12 @@ consentement affiche bien le nom et le logo de **ton application AFRO SOUND**
 ## 0. Informations du projet
 
 - **Nom de l'app** : AFRO SOUND (déjà défini dans `app.json` → `displayName`).
-- **URL Supabase** : `https://<PROJECT_REF>.supabase.co`
+- **URL Supabase** : `https://pijrddmcjivmfezfyvjf.supabase.co`
   (ton projet actuel côté app : `https://pijrddmcjivmfezfyvjf.supabase.co`,
   donc `PROJECT_REF = pijrddmcjivmfezfyvjf`).
 - **URL de callback Supabase** (la même pour Google et GitHub) :
   ```
-  https://<PROJECT_REF>.supabase.co/auth/v1/callback
+  https://pijrddmcjivmfezfyvjf.supabase.co/auth/v1/callback
   ```
 - **Deep link mobile** (retour vers l'app après login) :
   `com.afrsound://auth/callback` (voir `src/config/authConfig.js`).
@@ -64,7 +64,7 @@ le `Client Secret` issus de Google/GitHub.
 3. **Name** : `AFRO SOUND Web` (usage interne).
 4. **Authorized redirect URIs** : ajoute exactement
    ```
-   https://<PROJECT_REF>.supabase.co/auth/v1/callback
+   https://pijrddmcjivmfezfyvjf.supabase.co/auth/v1/callback
    ```
 5. Récupère le **Client ID** et le **Client Secret**.
 
@@ -84,7 +84,7 @@ le `Client Secret` issus de Google/GitHub.
    - **Application logo** (après création) : téléverse le logo AFRO SOUND.
    - **Authorization callback URL** :
      ```
-     https://<PROJECT_REF>.supabase.co/auth/v1/callback
+     https://pijrddmcjivmfezfyvjf.supabase.co/auth/v1/callback
      ```
 2. Crée l'app, génère un **Client Secret**, récupère **Client ID** + **Client Secret**.
 3. Dashboard Supabase → **Authentication → Providers → GitHub** → active, colle
@@ -160,9 +160,9 @@ La configuration des redirections/scopes est centralisée dans
 ## 7. Checklist de validation
 
 - [ ] Google : « App name » = AFRO SOUND + logo sur l'écran de consentement.
-- [ ] Google : redirect URI = `https://<PROJECT_REF>.supabase.co/auth/v1/callback`.
+- [ ] Google : redirect URI = `https://pijrddmcjivmfezfyvjf.supabase.co/auth/v1/callback`.
 - [ ] GitHub : « Application name » = AFRO SOUND + logo.
-- [ ] GitHub : callback URL = `https://<PROJECT_REF>.supabase.co/auth/v1/callback`.
+- [ ] GitHub : callback URL = `https://pijrddmcjivmfezfyvjf.supabase.co/auth/v1/callback`.
 - [ ] Supabase : providers Google + GitHub activés avec Client ID/Secret.
 - [ ] Supabase : `com.afrsound://auth/callback` ajouté aux Redirect URLs.
 - [ ] Android : intent-filter du scheme `com.afrsound` présent.

@@ -9,7 +9,7 @@ Ce document explique comment configurer l'authentification Google et GitHub pour
 2. Créez un projet et configurez l'**Écran de consentement OAuth** (User type: External, App name: AFRO SOUND).
 3. Allez dans **Identifiants** > **Créer des identifiants** > **ID de client OAuth**.
 4. Type d'application : **Application Web**.
-5. Ajoutez l'URL de redirection fournie par Supabase (ex: `https://your-project.supabase.co/auth/v1/callback`).
+5. Ajoutez l'URL de redirection fournie par Supabase (ex: `https://pijrddmcjivmfezfyvjf.supabase.co/auth/v1/callback`).
 6. Copiez le **Client ID** et le **Client Secret**.
 7. Dans le dashboard Supabase : **Authentication** > **Providers** > **Google**. Activez-le et collez les identifiants.
 
@@ -17,7 +17,7 @@ Ce document explique comment configurer l'authentification Google et GitHub pour
 1. Allez dans vos [Paramètres GitHub](https://github.com/settings/developers) > **OAuth Apps** > **New OAuth App**.
 2. Nom : AFRO SOUND.
 3. Homepage URL : l'URL de votre site ou Vercel.
-4. Authorization callback URL : L'URL fournie par Supabase (ex: `https://your-project.supabase.co/auth/v1/callback`).
+4. Authorization callback URL : L'URL fournie par Supabase (ex: `https://pijrddmcjivmfezfyvjf.supabase.co/auth/v1/callback`).
 5. Copiez le **Client ID** et générez un **Client Secret**.
 6. Dans le dashboard Supabase : **Authentication** > **Providers** > **GitHub**. Activez-le et collez les identifiants.
 

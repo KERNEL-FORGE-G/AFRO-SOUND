@@ -6,20 +6,18 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
   usePlayer,
   State,
-  usePlaybackState,
-  getPlaybackStateValue,
 } from '../context/PlayerContext';
 
 export default function PlayerBar() {
   const navigation = useNavigation();
-  const {currentTrack, togglePlayback} = usePlayer();
-  const playbackState = usePlaybackState();
+  const {currentTrack, togglePlayback, isPlaying} = usePlayer();
 
   if (!currentTrack) {
     return null;
   }
 
-  const isPlaying = getPlaybackStateValue(playbackState) === State.Playing;
+  // isPlaying is already derived in PlayerContext and provided via usePlayer
+  // const isPlaying = getPlaybackStateValue(playbackState) === State.Playing;
 
   return (
     <TouchableOpacity
@@ -64,7 +62,7 @@ export default function PlayerBar() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.playButton}
-          onPress={() => togglePlayback(playbackState)}>
+          onPress={() => togglePlayback()}>
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
             size={22}

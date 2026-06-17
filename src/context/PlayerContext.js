@@ -1,31 +1,17 @@
 /**
  * PlayerContext.js - Contexte global de lecture AFRO SOUND
- * Gère l'état du lecteur (piste en cours, file d'attente, play/pause)
- * partagé entre tous les écrans via React Context.
  */
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useRef,
-} from 'react';
-import Sound from 'react-native-sound';
-import {Alert} from 'react-native';
-import TrackPlayer, {Capability, RepeatMode} from 'react-native-track-player';
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import TrackPlayer, { Capability, RepeatMode, State, usePlaybackState, useProgress } from 'react-native-track-player';
+import { downloadTrack } from '../services/downloadService';
 
 const PlayerContext = createContext(null);
-
-// Configuration initiale pour react-native-sound
-Sound.setCategory('Playback');
 
 let playerReady = false;
 
 const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl;
-const getTrackArtwork = track =>
-  track?.cover || track?.cover_url || track?.artwork || '';
-const getTrackArtist = track =>
-  track?.artist || track?.artist_name || 'Artiste inconnu';
+const getTrackArtwork = track => track?.cover || track?.cover_url || track?.artwork || '';
+const getTrackArtist = track => track?.artist || track?.artist_name || 'Artiste inconnu';
 
 const normalizeTrack = track => ({
   id: String(track.id || track.url || track.audioUrl || track.title),
@@ -35,47 +21,19 @@ const normalizeTrack = track => ({
   album: track.album || '',
   artwork: getTrackArtwork(track),
   duration: track.duration || 30,
-  source: track.source || '',
 });
 
-/**
- * Configure le player une seule fois au démarrage
- */
 const setupPlayer = async () => {
-  if (playerReady) {
-    return;
-  }
+  if (playerReady) return;
   try {
-    await TrackPlayer.setupPlayer({
-      maxCacheSize: 1024 * 5, // 5 MB de cache
-    });
+    await TrackPlayer.setupPlayer();
     await TrackPlayer.updateOptions({
-      capabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToNext,
-        Capability.SkipToPrevious,
-        Capability.SeekTo,
-        Capability.Stop,
-      ],
-      compactCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToNext,
-        Capability.SkipToPrevious,
-      ],
-      notificationCapabilities: [
-        Capability.Play,
-        Capability.Pause,
-        Capability.SkipToNext,
-        Capability.SkipToPrevious,
-      ],
-      icon: require('../../logo.png'),
+      capabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext, Capability.SkipToPrevious, Capability.SeekTo, Capability.Stop],
+      compactCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext, Capability.SkipToPrevious],
+      notificationCapabilities: [Capability.Play, Capability.Pause, Capability.SkipToNext, Capability.SkipToPrevious],
     });
-    await TrackPlayer.setRepeatMode(RepeatMode.Queue);
     playerReady = true;
   } catch (e) {
-    // Player déjà initialisé, on ignore
     playerReady = true;
   }
 };
@@ -83,92 +41,58 @@ const setupPlayer = async () => {
 export function PlayerProvider({children}) {
   const [currentTrack, setCurrentTrack] = useState(null);
   const [queue, setQueue] = useState([]);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const playbackState = usePlaybackState();
+  const isPlaying = playbackState?.state === State.Playing;
   const [repeatMode, setRepeatMode] = useState('off');
   const [isShuffle, setIsShuffle] = useState(false);
-  const soundRef = useRef(null);
 
-  const toggleRepeat = useCallback(() => {
+  const toggleRepeat = useCallback(async () => {
     const modes = ['off', 'on', 'one'];
     const current = modes.indexOf(repeatMode);
-    setRepeatMode(modes[(current + 1) % modes.length]);
+    const nextMode = modes[(current + 1) % modes.length];
+    setRepeatMode(nextMode);
+    let trackPlayerMode = RepeatMode.Queue;
+    if (nextMode === 'one') trackPlayerMode = RepeatMode.Track;
+    else if (nextMode === 'off') trackPlayerMode = RepeatMode.Off;
+    await TrackPlayer.setRepeatMode(trackPlayerMode);
   }, [repeatMode]);
 
-  const toggleShuffle = useCallback(() => {
-    setIsShuffle(!isShuffle);
-  }, [isShuffle]);
+  const toggleShuffle = useCallback(async () => setIsShuffle(!isShuffle), [isShuffle]);
 
   const playTrack = useCallback(async (track, tracks = []) => {
-    if (soundRef.current) {
-      soundRef.current.release();
-    }
-
-    const url = getTrackUrl(track);
-    if (!url) {
-      Alert.alert('Erreur', "Pas d'URL.");
-      return;
-    }
-
-    const sound = new Sound(url, null, error => {
-      if (error) {
-        Alert.alert('Erreur', 'Impossible de charger le son.');
-        return;
-      }
-      sound.play(success => {
-        if (success) {
-          setIsPlaying(false);
-          setCurrentTrack(null);
-        } else {
-          Alert.alert('Erreur', 'Erreur de lecture.');
-        }
-      });
-      setIsPlaying(true);
-      setCurrentTrack(track);
-    });
-    soundRef.current = sound;
+    await setupPlayer();
+    const tracksToLoad = tracks.length > 0 ? tracks : [track];
+    const normalizedTracks = tracksToLoad.map(normalizeTrack);
+    await TrackPlayer.reset();
+    await TrackPlayer.add(normalizedTracks);
+    const trackIndex = normalizedTracks.findIndex(t => t.id === normalizeTrack(track).id);
+    if (trackIndex !== -1) await TrackPlayer.skip(trackIndex);
+    await TrackPlayer.play();
+    setQueue(tracksToLoad);
+    setCurrentTrack(track);
   }, []);
 
-  const togglePlayback = useCallback(() => {
-    if (!soundRef.current) {
-      return;
-    }
-    if (isPlaying) {
-      soundRef.current.pause();
-    } else {
-      soundRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  }, [isPlaying]);
+  const togglePlayback = useCallback(async () => {
+    if (playbackState?.state === State.Playing) await TrackPlayer.pause();
+    else await TrackPlayer.play();
+  }, [playbackState]);
 
-  const seekTo = useCallback(position => {
-    if (soundRef.current) {
-      soundRef.current.setCurrentTime(position);
-    }
-  }, []);
+  const seekTo = useCallback(async (pos) => await TrackPlayer.seekTo(pos), []);
 
   const skipToNext = useCallback(async () => {
-    // Logique simplifiée pour react-native-sound
+    await TrackPlayer.skipToNext();
+    const track = await TrackPlayer.getActiveTrack();
+    setCurrentTrack(track);
   }, []);
 
   const skipToPrevious = useCallback(async () => {
-    // Logique simplifiée pour react-native-sound
+    await TrackPlayer.skipToPrevious();
+    const track = await TrackPlayer.getActiveTrack();
+    setCurrentTrack(track);
   }, []);
 
   return (
-    <PlayerContext.Provider
-      value={{
-        currentTrack,
-        isPlaying,
-        playTrack,
-        togglePlayback,
-        seekTo,
-        skipToNext,
-        skipToPrevious,
-        repeatMode,
-        toggleRepeat,
-        isShuffle,
-        toggleShuffle,
-      }}>
+    <PlayerContext.Provider value={{ currentTrack, queue, isPlaying, playTrack, togglePlayback, seekTo, skipToNext, skipToPrevious, repeatMode, toggleRepeat, isShuffle, toggleShuffle, downloadTrack }}>
       {children}
     </PlayerContext.Provider>
   );
@@ -176,8 +100,8 @@ export function PlayerProvider({children}) {
 
 export const usePlayer = () => {
   const ctx = useContext(PlayerContext);
-  if (!ctx) {
-    throw new Error('usePlayer must be inside PlayerProvider');
-  }
+  if (!ctx) throw new Error('usePlayer must be inside PlayerProvider');
   return ctx;
 };
+
+export { useProgress, State };

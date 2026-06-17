@@ -267,8 +267,9 @@ const withTimeout = (promise, ms) => {
  * @param {string} query
  * @param {number} limit
  * @param {string} [source='all'] - 'all', 'deezer', 'itunes', ou 'jamendo'
+ * @param {string} [sortBySource] - Si défini, priorise une source spécifique
  */
-export const searchAll = async (query, limit = 10, source = 'all') => {
+export const searchAll = async (query, limit = 10, source = 'all', sortBySource = null) => {
   const tasks = [];
 
   if (source === 'all' || source === 'deezer') {
@@ -293,6 +294,15 @@ export const searchAll = async (query, limit = 10, source = 'all') => {
       combined.push(...result.value);
     }
   });
+
+  // Tri si une source prioritaire est demandée
+  if (sortBySource) {
+    combined.sort((a, b) => {
+      if (a.source === sortBySource && b.source !== sortBySource) return -1;
+      if (a.source !== sortBySource && b.source === sortBySource) return 1;
+      return 0;
+    });
+  }
 
   const uniqueById = new Map();
   combined.forEach(track => {

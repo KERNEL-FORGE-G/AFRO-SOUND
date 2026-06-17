@@ -7,18 +7,19 @@ import {
   Animated,
   Easing,
   Alert,
+  Share,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import theme, {Colors} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import TrackPlayer from 'react-native-track-player';
 import {
   usePlayer,
-  usePlaybackState,
   useProgress,
   State,
-  getPlaybackStateValue,
 } from '../context/PlayerContext';
 import {supabase} from '../supabaseClient';
+import {upsertTrack} from '../services/musicApi';
 import useAuth from '../hooks/useAuth';
 
 const getArtwork = track => track?.artwork || track?.cover || track?.cover_url;
@@ -38,6 +39,7 @@ export default function NowPlaying({navigation, route}) {
     currentTrack,
     queue,
     togglePlayback,
+    isPlaying,
     skipToNext,
     skipToPrevious,
     seekTo,
@@ -47,18 +49,30 @@ export default function NowPlaying({navigation, route}) {
     toggleShuffle,
     downloadTrack,
   } = usePlayer();
-  const playbackState = usePlaybackState();
   const {position, duration} = useProgress(500);
   const [isLiked, setIsLiked] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
   const [seekPreview, setSeekPreview] = useState(0);
 
   const track = currentTrack || routeTrack || {};
-  const playbackStateValue = getPlaybackStateValue(playbackState);
-  const isPlaying = playbackStateValue === State.Playing;
   const displayedPosition = isSeeking ? seekPreview : position;
   const displayedDuration = duration || track.duration || 0;
   const artwork = getArtwork(track);
+
+  // Synchronisation avec le lecteur natif
+  useEffect(() => {
+    const listener = TrackPlayer.addEventListener(
+      'playbackActiveTrackChanged',
+      async () => {
+        const track = await TrackPlayer.getActiveTrack();
+        if (track) {
+          // Si on utilise une mise à jour globale dans le contexte, on pourrait l'utiliser ici
+          // Pour l'instant, on se base sur la mise à jour via TrackPlayer directement
+        }
+      },
+    );
+    return () => listener.remove();
+  }, []);
 
   const spinValue = useRef(new Animated.Value(0)).current;
   const spinAnimation = useRef(null);
@@ -130,18 +144,8 @@ export default function NowPlaying({navigation, route}) {
         }
         setIsLiked(false);
       } else {
-        // Ensure track exists in tracks table first
-        await supabase.from('tracks').upsert([
-          {
-            id: track.id,
-            title: track.title,
-            artist: track.artist,
-            cover_url: track.artwork || track.cover || track.cover_url,
-            audio_url: track.url || track.audioUrl,
-            source: track.source,
-            duration: track.duration,
-          },
-        ]);
+        // Ensure track exists in tracks table first using the backend service
+        await upsertTrack(track);
 
         const {error} = await supabase.from('favorites').insert([
           {
@@ -221,7 +225,16 @@ export default function NowPlaying({navigation, route}) {
     {
       icon: 'share-social-outline',
       label: 'Partager',
-      onPress: () => Alert.alert('Partager', 'Partager ce titre'),
+      onPress: async () => {
+        try {
+          await Share.share({
+            message: `Écoute ${track.title} de ${getArtist(track)} sur Afro Sound !`,
+            url: track.url || track.audioUrl,
+          });
+        } catch (error) {
+          Alert.alert('Erreur', error.message);
+        }
+      },
     },
   ];
 
@@ -309,7 +322,7 @@ export default function NowPlaying({navigation, route}) {
 
         <TouchableOpacity
           style={styles.bigBtn}
-          onPress={() => togglePlayback(playbackState)}>
+          onPress={() => togglePlayback()}>
           <Ionicons
             name={isPlaying ? 'pause' : 'play'}
             size={40}
