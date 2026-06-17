@@ -261,15 +261,15 @@ app.get(['/track/:id', '/playlist/:id'], async (req, res) => {
         <meta property="og:description" content="${description}" />
         <meta property="og:image" content="${image}" />
         <meta property="twitter:card" content="summary_large_image" />
-        <meta http-equiv="refresh" content="0;url=afrosound://${isTrack ? 'track' : 'playlist'}/${id}" />
       </head>
       <body>
         <h1>${title}</h1>
         <p>Redirection vers l'application AFRO SOUND...</p>
         <script>
           setTimeout(() => {
-            window.location.href = "afrosound://${isTrack ? 'track' : 'playlist'}/${id}";
-          }, 1000);
+            const intentUrl = "intent://${isTrack ? 'track' : 'playlist'}/${id}#Intent;scheme=afrosound;package=com.helloworld;end;";
+            window.location.href = intentUrl;
+          }, 500);
         </script>
       </body>
     </html>
