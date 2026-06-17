@@ -1,18 +1,23 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  ActivityIndicator,
   Image,
   ScrollView,
-  ActivityIndicator,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {supabase} from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
-import useGroupPlaylist from '../hooks/useGroupPlaylist';
 import {Colors, Radius, Spacing, Typography} from '../theme';
+import {
+  fetchSharedPlaylists,
+  fetchUserPlaylists,
+  sharePlaylist,
+  togglePlaylistVisibility,
+} from '../services/playlistService';
 
 const sampleCovers = [
   require('../../assets/1.jpg'),
@@ -23,30 +28,36 @@ const sampleCovers = [
 
 export default function Library({navigation, route}) {
   const {user} = useAuth();
-  const {groupPlaylists} = useGroupPlaylist();
   const [myPlaylists, setMyPlaylists] = useState([]);
+  const [sharedPlaylists, setSharedPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingPlaylistId, setUpdatingPlaylistId] = useState(null);
 
-  const sharedPlaylists = Object.values(groupPlaylists);
+  const summary = useMemo(
+    () => ({
+      personal: myPlaylists.length,
+      shared: sharedPlaylists.length,
+      session: user ? 'ON' : 'OFF',
+    }),
+    [myPlaylists.length, sharedPlaylists.length, user],
+  );
 
-  const fetchPlaylists = useCallback(async () => {
+  const loadPlaylists = useCallback(async () => {
     if (!user) {
+      setMyPlaylists([]);
+      setSharedPlaylists([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const {data, error} = await supabase
-        .from('playlists')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', {ascending: false});
-
-      if (error) {
-        throw error;
-      }
-      setMyPlaylists(data || []);
+      const [mine, shared] = await Promise.all([
+        fetchUserPlaylists(user.id),
+        fetchSharedPlaylists(user.id),
+      ]);
+      setMyPlaylists(mine);
+      setSharedPlaylists(shared);
     } catch (error) {
       console.error('Error fetching playlists:', error.message);
     } finally {
@@ -55,8 +66,102 @@ export default function Library({navigation, route}) {
   }, [user]);
 
   useEffect(() => {
-    fetchPlaylists();
-  }, [fetchPlaylists, route.params?.refresh]);
+    loadPlaylists();
+  }, [loadPlaylists, route.params?.refresh]);
+
+  const openPlaylist = playlist => {
+    navigation.navigate('MusicPage', {
+      item: {
+        ...playlist,
+        title: playlist.name,
+        artist:
+          playlist.user_id === user?.id
+            ? playlist.is_public
+              ? 'Votre playlist partagée'
+              : 'Votre playlist privée'
+            : 'Playlist partagée',
+        image:
+          sampleCovers[
+            Math.abs((playlist.name || '').length) % sampleCovers.length
+          ],
+        canEdit: playlist.user_id === user?.id,
+      },
+    });
+  };
+
+  const handleToggleVisibility = async playlist => {
+    setUpdatingPlaylistId(playlist.id);
+    try {
+      const updated = await togglePlaylistVisibility(
+        playlist.id,
+        !playlist.is_public,
+      );
+      setMyPlaylists(previous =>
+        previous.map(item => (item.id === updated.id ? updated : item)),
+      );
+      await loadPlaylists();
+    } catch (error) {
+      console.error('Visibility update error:', error.message);
+    } finally {
+      setUpdatingPlaylistId(null);
+    }
+  };
+
+  const renderPlaylistCard = (playlist, index, options = {}) => (
+    <TouchableOpacity
+      key={playlist.id || index}
+      style={options.shared ? styles.sharedCard : styles.playlistCard}
+      activeOpacity={0.86}
+      onPress={() => openPlaylist(playlist)}>
+      {!options.shared ? (
+        <Image
+          source={sampleCovers[index % sampleCovers.length]}
+          style={styles.playlistCover}
+        />
+      ) : (
+        <View style={styles.sharedAccent} />
+      )}
+
+      <View style={styles.playlistInfo}>
+        <Text style={styles.playlistTitle}>{playlist.name}</Text>
+        <Text style={styles.playlistSubtitle}>
+          {options.shared
+            ? 'Disponible pour lecture et partage'
+            : playlist.is_public
+            ? 'Playlist publique'
+            : 'Playlist privée'}
+        </Text>
+      </View>
+
+      {options.shared ? (
+        <TouchableOpacity
+          style={styles.shareIconBtn}
+          onPress={() => sharePlaylist(playlist)}>
+          <Ionicons
+            name="share-social-outline"
+            size={18}
+            color={Colors.primary}
+          />
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.visibilitySwitch}>
+          {updatingPlaylistId === playlist.id ? (
+            <ActivityIndicator size="small" color={Colors.primary} />
+          ) : (
+            <Switch
+              value={playlist.is_public}
+              onValueChange={() => handleToggleVisibility(playlist)}
+              thumbColor={Colors.background}
+              trackColor={{
+                false: Colors.borderStrong,
+                true: Colors.primary,
+              }}
+            />
+          )}
+        </View>
+      )}
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
@@ -82,15 +187,15 @@ export default function Library({navigation, route}) {
 
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{myPlaylists.length}</Text>
+            <Text style={styles.summaryValue}>{summary.personal}</Text>
             <Text style={styles.summaryLabel}>Playlists perso</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{sharedPlaylists.length}</Text>
-            <Text style={styles.summaryLabel}>Playlists partagees</Text>
+            <Text style={styles.summaryValue}>{summary.shared}</Text>
+            <Text style={styles.summaryLabel}>Playlists partagées</Text>
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{user ? 'ON' : 'OFF'}</Text>
+            <Text style={styles.summaryValue}>{summary.session}</Text>
             <Text style={styles.summaryLabel}>Session</Text>
           </View>
         </View>
@@ -117,96 +222,44 @@ export default function Library({navigation, route}) {
         ) : (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Playlists cloud</Text>
+              <Text style={styles.sectionTitle}>Mes playlists</Text>
               <Text style={styles.sectionMeta}>
-                {myPlaylists.length} elements
+                {myPlaylists.length} élément{myPlaylists.length > 1 ? 's' : ''}
               </Text>
             </View>
             {myPlaylists.length === 0 ? (
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>Aucune playlist distante</Text>
+                <Text style={styles.emptyTitle}>Aucune playlist</Text>
                 <Text style={styles.emptyText}>
-                  Créez votre premiere playlist et retrouvez-la ici avec les
-                  donnees Supabase.
+                  Créez votre première playlist puis rendez-la publique pour la
+                  partager.
                 </Text>
               </View>
             ) : (
-              myPlaylists.map((playlist, index) => (
-                <TouchableOpacity
-                  key={playlist.id || index}
-                  style={styles.playlistCard}
-                  activeOpacity={0.86}
-                  onPress={() =>
-                    navigation.navigate('MusicPage', {
-                      item: {
-                        title: playlist.name,
-                        artist: playlist.is_public
-                          ? 'Playlist publique'
-                          : 'Playlist privee',
-                        image: sampleCovers[index % sampleCovers.length],
-                      },
-                    })
-                  }>
-                  <Image
-                    source={sampleCovers[index % sampleCovers.length]}
-                    style={styles.playlistCover}
-                  />
-                  <View style={styles.playlistInfo}>
-                    <Text style={styles.playlistTitle}>{playlist.name}</Text>
-                    <Text style={styles.playlistSubtitle}>
-                      {playlist.is_public
-                        ? 'Publiee pour partage'
-                        : 'Reservee a votre compte'}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="chevron-forward-outline"
-                    size={18}
-                    color={Colors.textSoft}
-                  />
-                </TouchableOpacity>
-              ))
+              myPlaylists.map((playlist, index) =>
+                renderPlaylistCard(playlist, index),
+              )
             )}
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Playlists partagees</Text>
+              <Text style={styles.sectionTitle}>Playlists partagées</Text>
               <TouchableOpacity
                 onPress={() => navigation.navigate('GroupPlaylist')}>
-                <Text style={styles.sectionAction}>Ouvrir</Text>
+                <Text style={styles.sectionAction}>Gérer</Text>
               </TouchableOpacity>
             </View>
             {sharedPlaylists.length === 0 ? (
               <View style={styles.emptyCard}>
-                <Text style={styles.emptyTitle}>
-                  Aucune playlist collaborative
-                </Text>
+                <Text style={styles.emptyTitle}>Aucune playlist publique</Text>
                 <Text style={styles.emptyText}>
-                  Lancez un espace partage pour inviter des membres et piloter
-                  la synchronisation.
+                  Publiez une de vos playlists ou attendez qu'un autre compte en
+                  partage une.
                 </Text>
               </View>
             ) : (
-              sharedPlaylists.map(playlist => (
-                <TouchableOpacity
-                  key={playlist.id}
-                  style={styles.sharedCard}
-                  activeOpacity={0.86}
-                  onPress={() => navigation.navigate('GroupPlaylist')}>
-                  <View style={styles.sharedAccent} />
-                  <View style={styles.sharedMeta}>
-                    <Text style={styles.playlistTitle}>{playlist.name}</Text>
-                    <Text style={styles.playlistSubtitle}>
-                      {playlist.members.length} membres •{' '}
-                      {playlist.tracks.length} titres
-                    </Text>
-                  </View>
-                  <View style={styles.syncBadge}>
-                    <Text style={styles.syncBadgeText}>
-                      {playlist.isSynced ? 'Syncee' : 'Locale'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))
+              sharedPlaylists.map((playlist, index) =>
+                renderPlaylistCard(playlist, index, {shared: true}),
+              )
             )}
           </>
         )}
@@ -334,6 +387,9 @@ const styles = StyleSheet.create({
   },
   playlistTitle: {color: Colors.text, fontSize: 15, fontWeight: '700'},
   playlistSubtitle: {color: Colors.textSoft, fontSize: 12, marginTop: 6},
+  visibilitySwitch: {
+    marginLeft: 8,
+  },
   sharedCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -352,21 +408,13 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     marginRight: 12,
   },
-  sharedMeta: {
-    flex: 1,
-  },
-  syncBadge: {
+  shareIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.surfaceAccent,
-    borderRadius: Radius.pill,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  syncBadgeText: {
-    color: Colors.primary,
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
   },
   loginBtn: {
     backgroundColor: Colors.primary,
