@@ -7,10 +7,9 @@ import React from 'react';
 import App from '../App';
 
 import {it} from '@jest/globals';
-import renderer from 'react-test-renderer';
+import renderer, {act} from 'react-test-renderer';
 
 jest.mock('../src/navigation/AppNavigator', () => {
-  const React = require('react');
   const {View, Text} = require('react-native');
   return () => (
     <View>
@@ -19,6 +18,8 @@ jest.mock('../src/navigation/AppNavigator', () => {
   );
 });
 
-it('renders correctly', () => {
-  renderer.create(<App />);
+it('renders correctly', async () => {
+  await act(async () => {
+    renderer.create(<App />);
+  });
 });
