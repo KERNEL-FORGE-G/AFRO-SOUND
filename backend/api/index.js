@@ -267,7 +267,7 @@ app.get(['/track/:id', '/playlist/:id'], async (req, res) => {
         <p>Redirection vers l'application AFRO SOUND...</p>
         <script>
           setTimeout(() => {
-            const intentUrl = "intent://${isTrack ? 'track' : 'playlist'}/${id}#Intent;scheme=afrosound;package=com.helloworld;end;";
+            const intentUrl = "intent://afro-sound.vercel.app/${isTrack ? 'track' : 'playlist'}/${id}#Intent;scheme=https;package=com.helloworld;end;";
             window.location.href = intentUrl;
           }, 500);
         </script>
