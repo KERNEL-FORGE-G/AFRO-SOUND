@@ -97,17 +97,35 @@ function MainTabs() {
 
 import {Linking} from 'react-native';
 import {SyncService} from '../services/syncService';
+import {DeepLinkingService} from '../services/deepLinkingService';
 
 const linking = {
-  prefixes: ['com.afrosound://', 'afrosound://'],
+  prefixes: [
+    'com.afrosound://',
+    'afrosound://',
+    'https://afro-sound.vercel.app',
+    'http://afro-sound.vercel.app',
+  ],
   config: {
     screens: {
       MusicPage: 'playlist/:id',
       NowPlaying: 'track/:trackId',
       Home: 'home',
       Profile: 'profile',
+      // Explicitly map paths that might come from the web dashboard
+      // Assuming web dashboard uses similar URL structure
     },
   },
+  // Add a helper to transform web URLs to app-friendly paths if necessary
+  getPathFromState(state, options) {
+    // Implement custom logic if standard navigation doesn't handle Vercel-to-App mapping correctly
+    return null; // Let React Navigation handle default
+  },
+  getStateFromPath(path, options) {
+    // Custom handling for web URLs that don't match exactly
+    return null; // Let React Navigation handle default
+  },
+
   async getInitialURL() {
     const url = await Linking.getInitialURL();
     return url;
@@ -128,11 +146,11 @@ export default function AppNavigator() {
   React.useEffect(() => {
     const handleDeepLink = async (event) => {
       const {url} = event;
-      if (url && url.includes('playlist/') && user) {
-        const playlistId = url.split('playlist/')[1];
-        if (playlistId) {
-          await SyncService.addMember(playlistId, user.id);
-        }
+      if (!url || !user) return;
+
+      const action = DeepLinkingService.parseUrl(url);
+      if (action?.type === 'PLAYLIST' && action.id) {
+        await SyncService.addMember(action.id, user.id);
       }
     };
 

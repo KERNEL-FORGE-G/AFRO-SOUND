@@ -35,6 +35,16 @@
             <category android:name="android.intent.category.BROWSABLE" />
             <data android:scheme="com.afrsound" android:host="auth" />
         </intent-filter>
+
+        <!-- Deep linking for web URLs (App Links) -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
+            <data android:scheme="https" />
+            <data android:host="afro-sound.vercel.app" />
+        </intent-filter>
       </activity>
     </application>
 </manifest>

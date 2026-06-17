@@ -4,7 +4,6 @@ import {
   Alert,
   FlatList,
   Image,
-  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,10 +13,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import theme, {Colors} from '../theme';
 import {usePlayer} from '../context/PlayerContext';
 import useAuth from '../hooks/useAuth';
+import AddToPlaylistModal from '../components/AddToPlaylistModal';
 import {
-  addTrackToRemotePlaylist,
   fetchPlaylistTracks,
-  fetchUserPlaylists,
   removeTrackFromRemotePlaylist,
   sharePlaylist,
 } from '../services/playlistService';
@@ -32,7 +30,7 @@ export default function MusicPage({route, navigation}) {
   const [tracks, setTracks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [playlistModalVisible, setPlaylistModalVisible] = useState(false);
-  const [userPlaylists, setUserPlaylists] = useState([]);
+  const [selectedTrack, setSelectedTrack] = useState(null);
   const canEdit = Boolean(item?.canEdit);
 
   const artworkSource = useMemo(() => {
@@ -92,7 +90,7 @@ export default function MusicPage({route, navigation}) {
     Alert.alert('File prête', `${tracks.length} titres ajoutés à la file.`);
   };
 
-  const openAddToPlaylist = async track => {
+  const openAddToPlaylist = track => {
     if (!user) {
       Alert.alert(
         'Connexion requise',
@@ -100,22 +98,8 @@ export default function MusicPage({route, navigation}) {
       );
       return;
     }
-
-    const playlists = await fetchUserPlaylists(user.id);
-    setUserPlaylists(
-      playlists.map(playlist => ({...playlist, selectedTrack: track})),
-    );
+    setSelectedTrack(track);
     setPlaylistModalVisible(true);
-  };
-
-  const handleAddToOtherPlaylist = async playlist => {
-    try {
-      await addTrackToRemotePlaylist(playlist.id, playlist.selectedTrack);
-      setPlaylistModalVisible(false);
-      Alert.alert('Playlist mise à jour', 'Titre copié dans la playlist.');
-    } catch (error) {
-      Alert.alert('Erreur', error.message);
-    }
   };
 
   const handleRemoveTrack = async track => {
@@ -266,44 +250,11 @@ export default function MusicPage({route, navigation}) {
         }
       />
 
-      <Modal
+      <AddToPlaylistModal
         visible={playlistModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setPlaylistModalVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>Ajouter à une autre playlist</Text>
-            {userPlaylists.length === 0 ? (
-              <Text style={styles.modalEmpty}>Aucune playlist disponible.</Text>
-            ) : (
-              userPlaylists.map(playlist => (
-                <TouchableOpacity
-                  key={playlist.id}
-                  style={styles.modalItem}
-                  onPress={() => handleAddToOtherPlaylist(playlist)}>
-                  <View>
-                    <Text style={styles.modalItemTitle}>{playlist.name}</Text>
-                    <Text style={styles.modalItemMeta}>
-                      {playlist.is_public ? 'Publique' : 'Privée'}
-                    </Text>
-                  </View>
-                  <Ionicons
-                    name="add-circle-outline"
-                    size={22}
-                    color={Colors.primary}
-                  />
-                </TouchableOpacity>
-              ))
-            )}
-            <TouchableOpacity
-              style={styles.modalClose}
-              onPress={() => setPlaylistModalVisible(false)}>
-              <Text style={styles.modalCloseText}>Fermer</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+        onClose={() => setPlaylistModalVisible(false)}
+        track={selectedTrack}
+      />
     </View>
   );
 }
@@ -415,58 +366,5 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 40,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: Colors.card,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 28,
-  },
-  modalTitle: {
-    color: Colors.text,
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 16,
-  },
-  modalEmpty: {
-    color: Colors.textSoft,
-    lineHeight: 22,
-    marginBottom: 18,
-  },
-  modalItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  modalItemTitle: {
-    color: Colors.text,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  modalItemMeta: {
-    color: Colors.textSoft,
-    fontSize: 12,
-    marginTop: 5,
-  },
-  modalClose: {
-    marginTop: 18,
-    backgroundColor: Colors.primary,
-    borderRadius: 16,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    color: Colors.background,
-    fontWeight: '800',
   },
 });
