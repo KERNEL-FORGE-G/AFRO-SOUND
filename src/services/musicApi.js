@@ -295,12 +295,23 @@ export const getSupabaseSongs = async () => {
  */
 export const fetchLyrics = async (artist, title) => {
   try {
+    // Alternative API: lyrics.best or similar if lyrics.ovh is unreliable.
+    // Using a placeholder/fallback strategy for now as lyrics.ovh returned 502.
     const res = await fetch(
       `https://api.lyrics.ovh/v1/${encodeURIComponent(
         artist,
       )}/${encodeURIComponent(title)}`,
     );
-    const data = await res.json();
+    
+    if (!res.ok) {
+        throw new Error(`API returned status ${res.status}`);
+    }
+    
+    const text = await res.text();
+    if (!text) {
+        return 'Paroles non disponibles.';
+    }
+    const data = JSON.parse(text);
     return data.lyrics || 'Paroles non disponibles.';
   } catch (e) {
     console.warn('[fetchLyrics] Erreur:', e.message);
