@@ -320,16 +320,16 @@ export const fetchLyrics = async (artist, title) => {
 };
 
 /**
- * Récupère les données de la page d'accueil
+ * Récupère les données de la page d'accueil avec des timeouts pour éviter le blocage
  */
 export const getHomeData = async () => {
   const [afrobeats, topGlobal, audiusTrending, customSongs] = await Promise.all(
     [
-      getDeezerAfrobeats(10),
-      getDeezerTopGlobal(10),
-      getAudiusTrending(10),
-      getSupabaseSongs(),
-    ],
+      withTimeout(getDeezerAfrobeats(10), 3000),
+      withTimeout(getDeezerTopGlobal(10), 3000),
+      withTimeout(getAudiusTrending(10), 3000),
+      withTimeout(getSupabaseSongs(), 3000),
+    ].map(p => p.catch(() => [])),
   );
 
   return {
