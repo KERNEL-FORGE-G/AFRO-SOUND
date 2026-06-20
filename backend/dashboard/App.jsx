@@ -1,6 +1,6 @@
 const {useState, useEffect} = React;
 
-const API_BASE = window.location.hostname.includes('vercel.app') ? '' : 'https://afro-sound.vercel.app';
+const API_BASE = 'https://afro-sound.vercel.app';
 
 const StatusCard = ({label, value, state}) => {
   const dotColor =
