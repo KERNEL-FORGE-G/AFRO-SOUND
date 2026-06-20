@@ -19,6 +19,7 @@ import CreatePlaylist from '../screens/CreatePlaylist';
 import Login from '../screens/Login';
 import GroupPlaylist from '../screens/GroupPlaylist';
 import Profile from '../screens/Profile';
+import Library from '../screens/Library';
 import OfflineLibrary from '../screens/OfflineLibrary';
 import {Colors, Radius, Shadows} from '../theme';
 import useAuth from '../hooks/useAuth';
