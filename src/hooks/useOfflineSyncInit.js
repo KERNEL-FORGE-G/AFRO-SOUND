@@ -1,5 +1,5 @@
 import {useEffect} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import OfflineSyncService from '../services/syncService';
 
 /**
@@ -7,7 +7,6 @@ import OfflineSyncService from '../services/syncService';
  * Call this once in App.tsx or a root component.
  */
 export const useOfflineSyncInit = store => {
-  const dispatch = useDispatch();
   const offlineQueue = useSelector(state => state.playlists.offlineQueue);
   const groupPlaylists = useSelector(state => state.playlists.groupPlaylists);
 

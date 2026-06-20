@@ -58,7 +58,7 @@ const openOAuthUrlAndWaitForCallback = async authUrl => {
 
 const exchangeCallbackUrlForSession = async callbackUrl => {
   console.log('[AuthService] Callback URL reçue:', callbackUrl);
-  
+
   const errorDescription = extractParam(callbackUrl, 'error_description');
   const errorCode = extractParam(callbackUrl, 'error');
   if (errorDescription || errorCode) {
@@ -67,14 +67,17 @@ const exchangeCallbackUrlForSession = async callbackUrl => {
 
   const code = extractParam(callbackUrl, 'code');
   console.log('[AuthService] Code extrait:', code);
-  
+
   if (!code) {
     throw new Error('Code OAuth absent dans la redirection.');
   }
 
   const {data, error} = await supabaseClient.auth.exchangeCodeForSession(code);
-  console.log('[AuthService] Résultat exchangeCodeForSession:', {data: !!data, error});
-  
+  console.log('[AuthService] Résultat exchangeCodeForSession:', {
+    data: !!data,
+    error,
+  });
+
   if (error) {
     throw error;
   }
@@ -83,9 +86,11 @@ const exchangeCallbackUrlForSession = async callbackUrl => {
 };
 
 // Helper to create profile manually
-const ensureProfileExists = async (user) => {
-  if (!user) return;
-  
+const ensureProfileExists = async user => {
+  if (!user) {
+    return;
+  }
+
   try {
     // On essaie d'insérer, si ça existe déjà (conflit sur id), on ne fait rien.
     const {data, error} = await supabaseClient
@@ -94,16 +99,22 @@ const ensureProfileExists = async (user) => {
       .eq('id', user.id)
       .single();
 
-    if (error && error.code === 'PGRST116') { // PGRST116 = Not found
+    if (error && error.code === 'PGRST116') {
+      // PGRST116 = Not found
       const {error: insertError} = await supabaseClient
         .from('profiles')
         .insert({
           id: user.id,
-          username: user.user_metadata?.full_name || user.email?.split('@')[0] || 'user_' + user.id.slice(0, 8),
+          username:
+            user.user_metadata?.full_name ||
+            user.email?.split('@')[0] ||
+            'user_' + user.id.slice(0, 8),
           avatar_url: user.user_metadata?.avatar_url || null,
         });
-        
-      if (insertError) console.error('[AuthService] Create profile error:', insertError);
+
+      if (insertError) {
+        console.error('[AuthService] Create profile error:', insertError);
+      }
     }
   } catch (e) {
     console.error('[AuthService] Exception in ensureProfileExists:', e);
@@ -118,11 +129,15 @@ export class AuthService {
         email: email.trim(),
         password,
       });
-      if (error) throw error;
-      
+      if (error) {
+        throw error;
+      }
+
       // Ensure profile exists
-      if (data.user) await ensureProfileExists(data.user);
-      
+      if (data.user) {
+        await ensureProfileExists(data.user);
+      }
+
       return {success: true, session: data?.session, user: data?.user};
     } catch (error) {
       console.error('[AuthService] Login error:', error.message);
@@ -133,7 +148,7 @@ export class AuthService {
   static async supabaseOAuth(provider) {
     try {
       const normalizedProvider = provider.toLowerCase().trim();
-      
+
       if (!SUPPORTED_OAUTH_PROVIDERS.includes(normalizedProvider)) {
         throw new Error(`Provider OAuth non supporté: ${provider}`);
       }
@@ -146,14 +161,20 @@ export class AuthService {
           skipBrowserRedirect: true,
         },
       });
-      if (error) throw error;
-      if (!data?.url) throw new Error("URL d'autorisation OAuth introuvable");
+      if (error) {
+        throw error;
+      }
+      if (!data?.url) {
+        throw new Error("URL d'autorisation OAuth introuvable");
+      }
 
       const callbackUrl = await openOAuthUrlAndWaitForCallback(data.url);
       const session = await exchangeCallbackUrlForSession(callbackUrl);
-      
+
       // Ensure profile exists
-      if (session?.user) await ensureProfileExists(session.user);
+      if (session?.user) {
+        await ensureProfileExists(session.user);
+      }
 
       return {success: true, session, user: session?.user, provider};
     } catch (error) {
@@ -161,7 +182,6 @@ export class AuthService {
       return {success: false, error: error.message};
     }
   }
-
 
   /**
    * Sign out from current session.

@@ -32,7 +32,11 @@ export const SyncService = {
       })
       .subscribe();
 
-    console.log(`[SyncService] Joined session ${playlistId} as ${isHost ? 'Host' : 'Listener'}`);
+    console.log(
+      `[SyncService] Joined session ${playlistId} as ${
+        isHost ? 'Host' : 'Listener'
+      }`,
+    );
   },
 
   /**
@@ -51,7 +55,9 @@ export const SyncService = {
    * Diffuse l'état actuel (uniquement si Host)
    */
   broadcastState: async (track, position, isPlaying) => {
-    if (!syncChannel || !isHost) return;
+    if (!syncChannel || !isHost) {
+      return;
+    }
 
     syncChannel.send({
       type: 'broadcast',
@@ -69,15 +75,15 @@ export const SyncService = {
   /**
    * Gère la réception d'un état distant (uniquement si Listener)
    */
-  handleRemoteState: async (payload) => {
+  handleRemoteState: async payload => {
     const {track, position, isPlaying, timestamp} = payload;
-    
+
     // Calculer le délai de réseau pour ajuster la position
     const networkDelay = (Date.now() - timestamp) / 1000;
     const adjustedPosition = position + networkDelay;
 
     const currentTrack = await TrackPlayer.getActiveTrack();
-    
+
     // 1. Changer de morceau si nécessaire
     if (!currentTrack || currentTrack.id !== track.id) {
       await TrackPlayer.add(track, 0);
@@ -110,12 +116,14 @@ export const SyncService = {
         .upsert([{playlist_id: playlistId, user_id: userId}], {
           onConflict: 'playlist_id,user_id',
         });
-      
-      if (error) throw error;
+
+      if (error) {
+        throw error;
+      }
       return true;
     } catch (e) {
       console.error('[SyncService] Failed to add member:', e.message);
       return false;
     }
-  }
+  },
 };

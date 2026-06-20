@@ -312,7 +312,9 @@ const App = () => {
   const doSearch = async () => {
     try {
       const res = await fetch(
-        API_BASE + '/api/audius/search?query=' + encodeURIComponent(searchQuery),
+        API_BASE +
+          '/api/audius/search?query=' +
+          encodeURIComponent(searchQuery),
       );
       const data = await res.json();
       setSearchResults(data || []);

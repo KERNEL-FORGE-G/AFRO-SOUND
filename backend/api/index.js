@@ -226,7 +226,7 @@ app.get(['/track/:id', '/playlist/:id'], async (req, res) => {
   const path = req.path;
   const id = req.params.id;
   const isTrack = path.startsWith('/track/');
-  
+
   let title = 'AFRO SOUND';
   let description = 'Découvrez du contenu sur AFRO SOUND';
   let image = 'https://afro-sound.vercel.app/logo.png'; // Fallback
@@ -234,17 +234,25 @@ app.get(['/track/:id', '/playlist/:id'], async (req, res) => {
   try {
     if (supabase) {
       if (isTrack) {
-        const {data} = await supabase.from('tracks').select('title, artist, cover_url').eq('id', id).maybeSingle();
+        const {data} = await supabase
+          .from('tracks')
+          .select('title, artist, cover_url')
+          .eq('id', id)
+          .maybeSingle();
         if (data) {
           title = data.title;
           description = `Écoutez ${data.artist || ''} sur AFRO SOUND`;
           image = data.cover_url || image;
         }
       } else {
-        const {data} = await supabase.from('playlists').select('name').eq('id', id).maybeSingle();
+        const {data} = await supabase
+          .from('playlists')
+          .select('name')
+          .eq('id', id)
+          .maybeSingle();
         if (data) {
           title = data.name;
-          description = `Rejoignez ma playlist sur AFRO SOUND`;
+          description = 'Rejoignez ma playlist sur AFRO SOUND';
         }
       }
     }
@@ -267,7 +275,9 @@ app.get(['/track/:id', '/playlist/:id'], async (req, res) => {
         <p>Redirection vers l'application AFRO SOUND...</p>
         <script>
           setTimeout(() => {
-            const intentUrl = "intent://afro-sound.vercel.app/${isTrack ? 'track' : 'playlist'}/${id}#Intent;scheme=https;package=com.helloworld;end;";
+            const intentUrl = "intent://afro-sound.vercel.app/${
+              isTrack ? 'track' : 'playlist'
+            }/${id}#Intent;scheme=https;package=com.helloworld;end;";
             window.location.href = intentUrl;
           }, 500);
         </script>

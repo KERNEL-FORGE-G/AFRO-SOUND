@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   Modal,
   View,
@@ -11,7 +11,10 @@ import {
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import {Colors, Radius} from '../theme';
-import {fetchUserPlaylists, addTrackToRemotePlaylist} from '../services/playlistService';
+import {
+  fetchUserPlaylists,
+  addTrackToRemotePlaylist,
+} from '../services/playlistService';
 import useAuth from '../hooks/useAuth';
 
 const AddToPlaylistModal = ({visible, onClose, track}) => {
@@ -20,32 +23,38 @@ const AddToPlaylistModal = ({visible, onClose, track}) => {
   const [loading, setLoading] = useState(false);
   const [addingTo, setAddingTo] = useState(null);
 
-  useEffect(() => {
-    if (visible && user) {
-      loadPlaylists();
-    }
-  }, [visible, user]);
-
-  const loadPlaylists = async () => {
+  const loadPlaylists = useCallback(async () => {
     setLoading(true);
     try {
       const data = await fetchUserPlaylists(user.id);
       setPlaylists(data);
     } catch (error) {
-      console.warn('[AddToPlaylistModal] Error loading playlists:', error.message);
+      console.warn(
+        '[AddToPlaylistModal] Error loading playlists:',
+        error.message,
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleAdd = async (playlistId) => {
+  useEffect(() => {
+    if (visible && user) {
+      loadPlaylists();
+    }
+  }, [visible, user, loadPlaylists]);
+
+  const handleAdd = async playlistId => {
     setAddingTo(playlistId);
     try {
       await addTrackToRemotePlaylist(playlistId, track);
       Alert.alert('Succès', 'Morceau ajouté à la playlist !');
       onClose();
     } catch (error) {
-      Alert.alert('Erreur', 'Impossible d\'ajouter le morceau à cette playlist.');
+      Alert.alert(
+        'Erreur',
+        "Impossible d'ajouter le morceau à cette playlist.",
+      );
       console.warn('[AddToPlaylistModal] Error adding track:', error.message);
     } finally {
       setAddingTo(null);
@@ -57,13 +66,11 @@ const AddToPlaylistModal = ({visible, onClose, track}) => {
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
-    >
-      <TouchableOpacity 
-        style={styles.backdrop} 
-        activeOpacity={1} 
-        onPress={onClose}
-      >
+      onRequestClose={onClose}>
+      <TouchableOpacity
+        style={styles.backdrop}
+        activeOpacity={1}
+        onPress={onClose}>
         <View style={styles.sheet} onStartShouldSetResponder={() => true}>
           <View style={styles.header}>
             <Text style={styles.title}>Ajouter à une playlist</Text>
@@ -75,20 +82,27 @@ const AddToPlaylistModal = ({visible, onClose, track}) => {
           {loading ? (
             <ActivityIndicator color={Colors.primary} style={styles.loader} />
           ) : (
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.list}>
               {playlists.length === 0 ? (
-                <Text style={styles.emptyText}>Vous n'avez pas encore de playlist.</Text>
+                <Text style={styles.emptyText}>
+                  Vous n'avez pas encore de playlist.
+                </Text>
               ) : (
-                playlists.map((pl) => (
-                  <TouchableOpacity 
-                    key={pl.id} 
+                playlists.map(pl => (
+                  <TouchableOpacity
+                    key={pl.id}
                     style={styles.item}
                     onPress={() => handleAdd(pl.id)}
-                    disabled={addingTo !== null}
-                  >
+                    disabled={addingTo !== null}>
                     <View style={styles.itemInfo}>
                       <View style={styles.iconContainer}>
-                        <Ionicons name="musical-notes" size={20} color={Colors.primary} />
+                        <Ionicons
+                          name="musical-notes"
+                          size={20}
+                          color={Colors.primary}
+                        />
                       </View>
                       <View>
                         <Text style={styles.itemName}>{pl.name}</Text>
@@ -100,7 +114,11 @@ const AddToPlaylistModal = ({visible, onClose, track}) => {
                     {addingTo === pl.id ? (
                       <ActivityIndicator size="small" color={Colors.primary} />
                     ) : (
-                      <Ionicons name="add-circle" size={24} color={Colors.primary} />
+                      <Ionicons
+                        name="add-circle"
+                        size={24}
+                        color={Colors.primary}
+                      />
                     )}
                   </TouchableOpacity>
                 ))
@@ -108,10 +126,7 @@ const AddToPlaylistModal = ({visible, onClose, track}) => {
             </ScrollView>
           )}
 
-          <TouchableOpacity 
-            style={styles.cancelBtn} 
-            onPress={onClose}
-          >
+          <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
             <Text style={styles.cancelText}>Annuler</Text>
           </TouchableOpacity>
         </View>

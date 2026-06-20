@@ -3,10 +3,7 @@ import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {Colors, Radius, Shadows} from '../theme';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import {
-  usePlayer,
-  State,
-} from '../context/PlayerContext';
+import {usePlayer} from '../context/PlayerContext';
 
 export default function PlayerBar() {
   const navigation = useNavigation();

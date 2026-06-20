@@ -208,7 +208,12 @@ const withTimeout = (promise, ms) => {
  * @param {string} [source='all'] - 'all', 'deezer', 'itunes', ou 'jamendo'
  * @param {string} [sortBySource] - Si défini, priorise une source spécifique
  */
-export const searchAll = async (query, limit = 10, source = 'all', sortBySource = null) => {
+export const searchAll = async (
+  query,
+  limit = 10,
+  source = 'all',
+  sortBySource = null,
+) => {
   const tasks = [];
 
   if (source === 'all' || source === 'deezer') {
@@ -237,8 +242,12 @@ export const searchAll = async (query, limit = 10, source = 'all', sortBySource 
   // Tri si une source prioritaire est demandée
   if (sortBySource) {
     combined.sort((a, b) => {
-      if (a.source === sortBySource && b.source !== sortBySource) return -1;
-      if (a.source !== sortBySource && b.source === sortBySource) return 1;
+      if (a.source === sortBySource && b.source !== sortBySource) {
+        return -1;
+      }
+      if (a.source !== sortBySource && b.source === sortBySource) {
+        return 1;
+      }
       return 0;
     });
   }
@@ -264,9 +273,11 @@ export const getSupabaseSongs = async () => {
       .select('*')
       .order('created_at', {ascending: false})
       .limit(20);
-    
-    if (error) throw error;
-    
+
+    if (error) {
+      throw error;
+    }
+
     return (data || []).map(track => ({
       ...track,
       id: track.id,
@@ -285,7 +296,9 @@ export const getSupabaseSongs = async () => {
 export const fetchLyrics = async (artist, title) => {
   try {
     const res = await fetch(
-      `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`,
+      `https://api.lyrics.ovh/v1/${encodeURIComponent(
+        artist,
+      )}/${encodeURIComponent(title)}`,
     );
     const data = await res.json();
     return data.lyrics || 'Paroles non disponibles.';

@@ -14,6 +14,66 @@ import {getHomeData} from '../services/musicApi';
 import {usePlayer} from '../context/PlayerContext';
 import {getServerTargets} from '../config';
 
+const RecentCard = ({item, queue, onPlay}) => (
+  <TouchableOpacity
+    style={styles.recentCard}
+    activeOpacity={0.86}
+    onPress={() => onPlay(item, queue)}>
+    <Image
+      source={
+        item.cover
+          ? {uri: item.cover}
+          : item.cover_url
+          ? {uri: item.cover_url}
+          : require('../../logo.png')
+      }
+      style={styles.recentImage}
+    />
+    <View style={styles.recentMeta}>
+      <Text style={styles.recentTitle} numberOfLines={1}>
+        {item.title}
+      </Text>
+      <Text style={styles.recentArtist} numberOfLines={1}>
+        {item.artist || item.artist_name || 'Artiste inconnu'}
+      </Text>
+    </View>
+    <View style={styles.recentPlay}>
+      <Ionicons name="play" size={16} color={Colors.background} />
+    </View>
+  </TouchableOpacity>
+);
+
+const TrackCard = ({item, queue, onPlay}) => (
+  <TouchableOpacity
+    activeOpacity={0.9}
+    style={styles.card}
+    onPress={() => onPlay(item, queue)}>
+    <View>
+      <Image
+        source={
+          item.cover
+            ? {uri: item.cover}
+            : item.cover_url
+            ? {uri: item.cover_url}
+            : require('../../logo.png')
+        }
+        style={styles.cardImage}
+      />
+      <View style={styles.sourceBadge}>
+        <Text style={styles.sourceBadgeText}>
+          {(item.source || 'local').toUpperCase()}
+        </Text>
+      </View>
+    </View>
+    <Text style={styles.cardTitle} numberOfLines={1}>
+      {item.title}
+    </Text>
+    <Text style={styles.cardArtist} numberOfLines={1}>
+      {item.artist || item.artist_name || 'Artiste inconnu'}
+    </Text>
+  </TouchableOpacity>
+);
+
 export default function Home({navigation}) {
   const [sections, setSections] = useState({
     afrobeats: [],
@@ -46,66 +106,6 @@ export default function Home({navigation}) {
     await playTrack(track, queue);
     navigation.navigate('NowPlaying', {track});
   };
-
-  const RecentCard = ({item, queue}) => (
-    <TouchableOpacity
-      style={styles.recentCard}
-      activeOpacity={0.86}
-      onPress={() => handlePlay(item, queue)}>
-      <Image
-        source={
-          item.cover
-            ? {uri: item.cover}
-            : item.cover_url
-            ? {uri: item.cover_url}
-            : require('../../logo.png')
-        }
-        style={styles.recentImage}
-      />
-      <View style={styles.recentMeta}>
-        <Text style={styles.recentTitle} numberOfLines={1}>
-          {item.title}
-        </Text>
-        <Text style={styles.recentArtist} numberOfLines={1}>
-          {item.artist || item.artist_name || 'Artiste inconnu'}
-        </Text>
-      </View>
-      <View style={styles.recentPlay}>
-        <Ionicons name="play" size={16} color={Colors.background} />
-      </View>
-    </TouchableOpacity>
-  );
-
-  const TrackCard = ({item, queue}) => (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      style={styles.card}
-      onPress={() => handlePlay(item, queue)}>
-      <View>
-        <Image
-          source={
-            item.cover
-              ? {uri: item.cover}
-              : item.cover_url
-              ? {uri: item.cover_url}
-              : require('../../logo.png')
-          }
-          style={styles.cardImage}
-        />
-        <View style={styles.sourceBadge}>
-          <Text style={styles.sourceBadgeText}>
-            {(item.source || 'local').toUpperCase()}
-          </Text>
-        </View>
-      </View>
-      <Text style={styles.cardTitle} numberOfLines={1}>
-        {item.title}
-      </Text>
-      <Text style={styles.cardArtist} numberOfLines={1}>
-        {item.artist || item.artist_name || 'Artiste inconnu'}
-      </Text>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={[theme.container, styles.mainContainer]}>
@@ -249,6 +249,7 @@ export default function Home({navigation}) {
                       key={item.id || index}
                       item={item}
                       queue={sections.recentTracks}
+                      onPlay={handlePlay}
                     />
                   ))}
             </View>
@@ -269,6 +270,7 @@ export default function Home({navigation}) {
                         key={item.id || index}
                         item={item}
                         queue={sections.customSongs}
+                        onPlay={handlePlay}
                       />
                     ))}
                   </ScrollView>
@@ -289,6 +291,7 @@ export default function Home({navigation}) {
                     key={item.id || index}
                     item={item}
                     queue={sections.afrobeats}
+                    onPlay={handlePlay}
                   />
                 ))}
             </ScrollView>
@@ -329,6 +332,7 @@ export default function Home({navigation}) {
                     key={item.id || index}
                     item={item}
                     queue={sections.topGlobal}
+                    onPlay={handlePlay}
                   />
                 ))}
             </ScrollView>
@@ -347,6 +351,7 @@ export default function Home({navigation}) {
                     key={item.id || index}
                     item={item}
                     queue={sections.audiusTrending}
+                    onPlay={handlePlay}
                   />
                 ))}
             </ScrollView>

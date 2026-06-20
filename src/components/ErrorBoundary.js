@@ -1,15 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 
 export default class ErrorBoundary extends React.Component {
-  state = { hasError: false, error: null };
+  state = {hasError: false, error: null};
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+    return {hasError: true, error};
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("CRASH DÉTAILLÉ:", error, errorInfo);
+    console.error('CRASH DÉTAILLÉ:', error, errorInfo);
   }
 
   render() {
@@ -26,7 +26,12 @@ export default class ErrorBoundary extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  text: { fontSize: 18, color: 'red' },
-  error: { fontSize: 14, color: 'gray', marginTop: 10 }
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  text: {fontSize: 18, color: 'red'},
+  error: {fontSize: 14, color: 'gray', marginTop: 10},
 });

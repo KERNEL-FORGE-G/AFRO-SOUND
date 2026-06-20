@@ -14,7 +14,6 @@ import Register from '../screens/Register';
 import MusicPage from '../screens/MusicPage';
 import PlayerBar from '../components/PlayerBar';
 import Search from '../screens/Search';
-import Library from '../screens/Library';
 import SearchResults from '../screens/SearchResults';
 import CreatePlaylist from '../screens/CreatePlaylist';
 import Login from '../screens/Login';
@@ -38,6 +37,22 @@ const navigationTheme = {
     border: Colors.border,
     notification: Colors.accent,
   },
+};
+
+const TabIcon = ({focused, color, size, routeName}) => {
+  let iconName;
+
+  if (routeName === 'Accueil') {
+    iconName = focused ? 'home' : 'home-outline';
+  } else if (routeName === 'Rechercher') {
+    iconName = focused ? 'search' : 'search-outline';
+  } else if (routeName === 'Créer') {
+    iconName = focused ? 'add-circle' : 'add-circle-outline';
+  } else if (routeName === 'Hors-ligne') {
+    iconName = focused ? 'cloud-offline' : 'cloud-offline-outline';
+  }
+
+  return <Ionicons name={iconName} size={size} color={color} />;
 };
 
 function MainTabs() {
@@ -67,21 +82,7 @@ function MainTabs() {
           },
           tabBarActiveTintColor: Colors.primary,
           tabBarInactiveTintColor: Colors.textSoft,
-          tabBarIcon: ({focused, color, size}) => {
-            let iconName;
-
-            if (route.name === 'Accueil') {
-              iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'Rechercher') {
-              iconName = focused ? 'search' : 'search-outline';
-            } else if (route.name === 'Créer') {
-              iconName = focused ? 'add-circle' : 'add-circle-outline';
-            } else if (route.name === 'Hors-ligne') {
-              iconName = focused ? 'cloud-offline' : 'cloud-offline-outline';
-            }
-
-            return <Ionicons name={iconName} size={size} color={color} />;
-          },
+          tabBarIcon: (props) => <TabIcon {...props} routeName={route.name} />,
         })}>
         <Tab.Screen name="Accueil" component={Home} />
         <Tab.Screen name="Rechercher" component={Search} />
@@ -145,9 +146,11 @@ export default function AppNavigator() {
 
   // Effet pour gérer l'ajout automatique lors d'un deep link de playlist
   React.useEffect(() => {
-    const handleDeepLink = async (event) => {
+    const handleDeepLink = async event => {
       const {url} = event;
-      if (!url || !user) return;
+      if (!url || !user) {
+        return;
+      }
 
       const action = DeepLinkingService.parseUrl(url);
       if (action?.type === 'PLAYLIST' && action.id) {

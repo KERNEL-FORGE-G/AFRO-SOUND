@@ -12,14 +12,14 @@ export const startRealtimePlaylistSync = () => {
         console.log('Playlist updated:', payload);
         // Ici, on pourrait déclencher une action Redux pour rafraîchir la playlist
         // store.dispatch(fetchPlaylist(payload.new.id));
-      }
+      },
     )
     .on(
       'postgres_changes',
       {event: 'INSERT', schema: 'public', table: 'playlist_tracks'},
       payload => {
         console.log('Track added to playlist:', payload);
-      }
+      },
     )
     .subscribe();
 

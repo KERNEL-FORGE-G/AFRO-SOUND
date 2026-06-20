@@ -23,7 +23,8 @@ const PlayerContext = createContext(null);
 
 let playerSetupPromise = null;
 
-const getTrackUrl = track => track?.audioUrl || track?.url || track?.previewUrl || track?.audio_url;
+const getTrackUrl = track =>
+  track?.audioUrl || track?.url || track?.previewUrl || track?.audio_url;
 const getTrackArtwork = track =>
   track?.artwork || track?.cover || track?.cover_url || '';
 const getTrackArtist = track =>
@@ -51,10 +52,10 @@ const normalizeTrack = track => ({
   source: track?.source || 'local',
 });
 
-const getLocalPath = async (trackId) => {
+const getLocalPath = async trackId => {
   try {
     const path = await AsyncStorage.getItem(`track_${trackId}`);
-    if (path && await RNFetchBlob.fs.exists(path)) {
+    if (path && (await RNFetchBlob.fs.exists(path))) {
       return path;
     }
   } catch (e) {
@@ -206,14 +207,14 @@ export function PlayerProvider({children}) {
         : [track].filter(Boolean);
 
     const processedQueue = await Promise.all(
-      baseQueue.map(async (t) => {
+      baseQueue.map(async t => {
         const normalized = normalizeTrack(t);
         const localPath = await getLocalPath(normalized.id);
         if (localPath) {
           return {...normalized, url: `file://${localPath}`};
         }
         return normalized;
-      })
+      }),
     );
 
     const normalizedQueue = processedQueue.filter(item => item.url && item.id);
@@ -279,7 +280,7 @@ export function PlayerProvider({children}) {
     try {
       const activeIndex = await TrackPlayer.getActiveTrackIndex();
       const currentQueue = await TrackPlayer.getQueue();
-      
+
       if (activeIndex === currentQueue.length - 1) {
         if (repeatModeRef.current === 'on') {
           await TrackPlayer.skip(0);
@@ -394,18 +395,18 @@ export function PlayerProvider({children}) {
       const otherTracks = queueRef.current
         .filter((_, idx) => idx !== currentIdx)
         .sort(() => Math.random() - 0.5);
-      
+
       const newQueue = [currentTrackObj, ...otherTracks];
-      
+
       await TrackPlayer.reset();
       await TrackPlayer.add(newQueue);
       await TrackPlayer.play();
-      
+
       queueRef.current = newQueue;
       setQueue(newQueue);
       setQueueIndex(0);
     } else if (!nextShuffle) {
-      // In a real app, we might want to restore original order, 
+      // In a real app, we might want to restore original order,
       // but here we just keep current state.
     }
   }, []);
@@ -444,7 +445,10 @@ export function PlayerProvider({children}) {
             : undefined,
       }).fetch('GET', normalizedTrack.url);
 
-      await AsyncStorage.setItem(`track_${normalizedTrack.id}`, response.path());
+      await AsyncStorage.setItem(
+        `track_${normalizedTrack.id}`,
+        response.path(),
+      );
       Alert.alert('Téléchargement lancé', normalizedTrack.title);
       return response.path?.() || path;
     } catch (error) {
@@ -505,6 +509,6 @@ export const usePlayer = () => {
     throw new Error('usePlayer must be used within a PlayerProvider');
   }
   return context;
-}
+};
 
 export {State, Event, RepeatMode};

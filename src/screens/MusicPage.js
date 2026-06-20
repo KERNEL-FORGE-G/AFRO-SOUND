@@ -49,11 +49,13 @@ export default function MusicPage({route, navigation}) {
   const fetchTracks = useCallback(async () => {
     setLoading(true);
     try {
-      if (!item?.id) throw new Error("ID de playlist manquant");
+      if (!item?.id) {
+        throw new Error('ID de playlist manquant');
+      }
       const data = await fetchPlaylistTracks(item?.id);
       setTracks(data);
     } catch (error) {
-      console.error("Erreur détaillée dans fetchTracks:", error);
+      console.error('Erreur détaillée dans fetchTracks:', error);
       Alert.alert('Erreur', error.message);
     } finally {
       setLoading(false);
