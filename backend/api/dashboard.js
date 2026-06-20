@@ -1112,8 +1112,7 @@ const {
   useState,
   useEffect
 } = React;
-const API_BASE = ''; // Replace with 'http://localhost:3000' for local dev
-
+const API_BASE = window.location.hostname.includes('vercel.app') ? '' : 'https://afro-sound.vercel.app';
 const StatusCard = ({
   label,
   value,
