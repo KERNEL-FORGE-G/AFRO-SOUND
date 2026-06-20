@@ -20,6 +20,7 @@ import CreatePlaylist from '../screens/CreatePlaylist';
 import Login from '../screens/Login';
 import GroupPlaylist from '../screens/GroupPlaylist';
 import Profile from '../screens/Profile';
+import OfflineLibrary from '../screens/OfflineLibrary';
 import {Colors, Radius, Shadows} from '../theme';
 import useAuth from '../hooks/useAuth';
 
@@ -75,8 +76,8 @@ function MainTabs() {
               iconName = focused ? 'search' : 'search-outline';
             } else if (route.name === 'Créer') {
               iconName = focused ? 'add-circle' : 'add-circle-outline';
-            } else if (route.name === 'Bibliothèque') {
-              iconName = focused ? 'library' : 'library-outline';
+            } else if (route.name === 'Hors-ligne') {
+              iconName = focused ? 'cloud-offline' : 'cloud-offline-outline';
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
@@ -85,7 +86,7 @@ function MainTabs() {
         <Tab.Screen name="Accueil" component={Home} />
         <Tab.Screen name="Rechercher" component={Search} />
         <Tab.Screen name="Créer" component={CreatePlaylist} />
-        <Tab.Screen name="Bibliothèque" component={Library} />
+        <Tab.Screen name="Hors-ligne" component={OfflineLibrary} />
       </Tab.Navigator>
 
       <View style={styles.playerBarWrapper}>

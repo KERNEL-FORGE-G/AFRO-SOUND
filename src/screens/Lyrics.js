@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,17 +6,27 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import theme, {Colors} from '../theme';
 import {usePlayer} from '../context/PlayerContext';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import {fetchLyrics} from '../services/musicApi';
 
 export default function Lyrics({navigation}) {
   const {currentTrack} = usePlayer();
+  const [lyrics, setLyrics] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const lyrics =
-    currentTrack?.lyrics ||
-    'Désolé, les paroles ne sont pas disponibles pour ce titre.';
+  useEffect(() => {
+    if (currentTrack) {
+      setLoading(true);
+      fetchLyrics(currentTrack.artist, currentTrack.title).then(text => {
+        setLyrics(text);
+        setLoading(false);
+      });
+    }
+  }, [currentTrack]);
 
   return (
     <View style={theme.container}>
@@ -49,7 +59,11 @@ export default function Lyrics({navigation}) {
           {currentTrack?.artist || 'Artiste inconnu'}
         </Text>
         <View style={styles.lyricsContainer}>
-          <Text style={styles.lyrics}>{lyrics}</Text>
+          {loading ? (
+            <ActivityIndicator color={Colors.primary} />
+          ) : (
+            <Text style={styles.lyrics}>{lyrics}</Text>
+          )}
         </View>
       </ScrollView>
     </View>

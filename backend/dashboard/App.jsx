@@ -1,5 +1,7 @@
 const {useState, useEffect} = React;
 
+const API_BASE = ''; // Replace with 'http://localhost:3000' for local dev
+
 const StatusCard = ({label, value, state}) => {
   const dotColor =
     state === 'ok'
@@ -255,7 +257,7 @@ const App = () => {
 
   const adminFetch = async (url, options = {}) => {
     const sep = url.includes('?') ? '&' : '?';
-    const finalUrl = url + sep + 'key=' + adminKey;
+    const finalUrl = API_BASE + url + sep + 'key=' + adminKey;
     const res = await fetch(finalUrl, {
       ...options,
       headers: {
@@ -272,7 +274,7 @@ const App = () => {
 
   const loadStatus = async () => {
     try {
-      const res = await fetch('/api/status');
+      const res = await fetch(API_BASE + '/api/status');
       const data = await res.json();
       setStatus(data);
     } catch (e) {
@@ -310,7 +312,7 @@ const App = () => {
   const doSearch = async () => {
     try {
       const res = await fetch(
-        '/api/audius/search?query=' + encodeURIComponent(searchQuery),
+        API_BASE + '/api/audius/search?query=' + encodeURIComponent(searchQuery),
       );
       const data = await res.json();
       setSearchResults(data || []);
@@ -348,7 +350,7 @@ const App = () => {
 
   const loadLibrary = async () => {
     try {
-      const res = await fetch('/api/songs');
+      const res = await fetch(API_BASE + '/api/songs');
       const data = await res.json();
       setLibrary(data || []);
       setView('library');

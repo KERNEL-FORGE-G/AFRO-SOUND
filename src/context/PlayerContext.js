@@ -14,10 +14,9 @@ import TrackPlayer, {
   Event,
   RepeatMode,
   State,
-  usePlaybackState,
-  useProgress,
   useTrackPlayerEvents,
 } from 'react-native-track-player';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFetchBlob from 'rn-fetch-blob';
 
 const PlayerContext = createContext(null);
@@ -51,6 +50,18 @@ const normalizeTrack = track => ({
   duration: getTrackDuration(track),
   source: track?.source || 'local',
 });
+
+const getLocalPath = async (trackId) => {
+  try {
+    const path = await AsyncStorage.getItem(`track_${trackId}`);
+    if (path && await RNFetchBlob.fs.exists(path)) {
+      return path;
+    }
+  } catch (e) {
+    console.warn('Error getting local path', e);
+  }
+  return null;
+};
 
 const buildDownloadName = track => {
   const rawName = `${track?.artist || 'artiste'}-${track?.title || 'titre'}`;
@@ -193,9 +204,19 @@ export function PlayerProvider({children}) {
       Array.isArray(tracks) && tracks.length > 0
         ? tracks
         : [track].filter(Boolean);
-    const normalizedQueue = baseQueue
-      .map(normalizeTrack)
-      .filter(item => item.url && item.id);
+
+    const processedQueue = await Promise.all(
+      baseQueue.map(async (t) => {
+        const normalized = normalizeTrack(t);
+        const localPath = await getLocalPath(normalized.id);
+        if (localPath) {
+          return {...normalized, url: `file://${localPath}`};
+        }
+        return normalized;
+      })
+    );
+
+    const normalizedQueue = processedQueue.filter(item => item.url && item.id);
 
     if (normalizedQueue.length === 0) {
       Alert.alert('Lecture impossible', "Aucun flux audio n'est disponible.");
@@ -396,16 +417,8 @@ export function PlayerProvider({children}) {
       return null;
     }
 
-    const directories = RNFetchBlob?.fs?.dirs || {};
-    const baseDir =
-      Platform.OS === 'android'
-        ? directories.DownloadDir || directories.DocumentDir
-        : directories.DocumentDir;
-
-    if (!baseDir) {
-      Alert.alert('Téléchargement impossible', 'Répertoire introuvable.');
-      return null;
-    }
+    const baseDir = `${RNFetchBlob.fs.dirs.DocumentDir}/AFRO SOUND`;
+    await RNFetchBlob.fs.mkdir(baseDir).catch(() => {}); // Create directory if not exists
 
     const extension =
       normalizedTrack.url.split('.').pop()?.split('?')[0] || 'mp3';
@@ -417,6 +430,7 @@ export function PlayerProvider({children}) {
       const response = await RNFetchBlob.config({
         path,
         fileCache: true,
+        // Background download
         addAndroidDownloads:
           Platform.OS === 'android'
             ? {
@@ -430,6 +444,7 @@ export function PlayerProvider({children}) {
             : undefined,
       }).fetch('GET', normalizedTrack.url);
 
+      await AsyncStorage.setItem(`track_${normalizedTrack.id}`, response.path());
       Alert.alert('Téléchargement lancé', normalizedTrack.title);
       return response.path?.() || path;
     } catch (error) {

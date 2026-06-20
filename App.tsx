@@ -5,6 +5,7 @@ import {Provider} from 'react-redux';
 import {PersistGate} from 'redux-persist/integration/react';
 import {store, persistor} from './src/store';
 import {startRealtimePlaylistSync} from './src/services/realtimeService';
+import ErrorBoundary from './src/components/ErrorBoundary';
 
 function App(): JSX.Element {
   useEffect(() => {
@@ -24,7 +25,9 @@ function App(): JSX.Element {
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <PlayerProvider>
-          <AppNavigator />
+          <ErrorBoundary>
+            <AppNavigator />
+          </ErrorBoundary>
         </PlayerProvider>
       </PersistGate>
     </Provider>

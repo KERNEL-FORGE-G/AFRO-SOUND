@@ -14,12 +14,11 @@ import {
 import Slider from '@react-native-community/slider';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import theme, {Colors, Radius, Shadows} from '../theme';
+import {useProgress} from 'react-native-track-player';
 import {
   State,
   getPlaybackStateValue,
-  usePlaybackState,
   usePlayer,
-  useProgress,
 } from '../context/PlayerContext';
 import {supabase} from '../supabaseClient';
 import useAuth from '../hooks/useAuth';
@@ -65,9 +64,9 @@ export default function NowPlaying({navigation, route}) {
     seekTo,
     skipToNext,
     skipToPrevious,
+    isPlaying,
   } = usePlayer();
 
-  const playbackState = usePlaybackState();
   const {position, duration} = useProgress(500);
   const [isLiked, setIsLiked] = useState(false);
   const [isSeeking, setIsSeeking] = useState(false);
@@ -78,8 +77,6 @@ export default function NowPlaying({navigation, route}) {
   const [loadingTrack, setLoadingTrack] = useState(false);
 
   const track = currentTrack || routeTrack || {};
-  const playbackStateValue = getPlaybackStateValue(playbackState);
-  const isPlaying = playbackStateValue === State.Playing;
   const displayedPosition = isSeeking ? seekPreview : position;
   const displayedDuration = duration || track.duration || 0;
   const artwork = getArtwork(track);
@@ -90,7 +87,7 @@ export default function NowPlaying({navigation, route}) {
     }
   }, [trackId]);
 
-  const loadTrackById = async (id) => {
+  const loadTrackById = async id => {
     setLoadingTrack(true);
     try {
       const data = await getTrackById(id);
@@ -119,7 +116,9 @@ export default function NowPlaying({navigation, route}) {
       }, 3000);
     }
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval) {
+        clearInterval(interval);
+      }
     };
   }, [playlistId, user, ownerId, track, position, isPlaying]);
 
@@ -139,12 +138,17 @@ export default function NowPlaying({navigation, route}) {
   }, [spinValue]);
 
   useEffect(() => {
-    if (isPlaying) spinAnimation.current?.start();
-    else spinAnimation.current?.stop();
+    if (isPlaying) {
+      spinAnimation.current?.start();
+    } else {
+      spinAnimation.current?.stop();
+    }
   }, [isPlaying]);
 
   const checkIfLiked = useCallback(async () => {
-    if (!user?.id || !track?.id) return;
+    if (!user?.id || !track?.id) {
+      return;
+    }
     try {
       const {data} = await supabase
         .from('favorites')
@@ -186,20 +190,24 @@ export default function NowPlaying({navigation, route}) {
         setIsLiked(false);
         return;
       }
-      await supabase.from('tracks').upsert([{
-        id: track.id,
-        title: track.title,
-        artist: getArtist(track),
-        album: track.album || '',
-        cover_url: artwork,
-        audio_url: track.url || track.audioUrl,
-        source: track.source,
-        duration: track.duration,
-      }]);
-      await supabase.from('favorites').insert([{
-        user_id: user.id,
-        track_id: track.id,
-      }]);
+      await supabase.from('tracks').upsert([
+        {
+          id: track.id,
+          title: track.title,
+          artist: getArtist(track),
+          album: track.album || '',
+          cover_url: artwork,
+          audio_url: track.url || track.audioUrl,
+          source: track.source,
+          duration: track.duration,
+        },
+      ]);
+      await supabase.from('favorites').insert([
+        {
+          user_id: user.id,
+          track_id: track.id,
+        },
+      ]);
       setIsLiked(true);
     } catch (error) {
       console.warn(error);
@@ -292,10 +300,9 @@ export default function NowPlaying({navigation, route}) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.artContainer}>
           <Animated.Image
             source={artwork ? {uri: artwork} : require('../../logo.png')}
@@ -336,10 +343,10 @@ export default function NowPlaying({navigation, route}) {
             maximumTrackTintColor={Colors.borderStrong}
             thumbTintColor={Colors.primary}
           />
-        <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(displayedPosition)}</Text>
-          <Text style={styles.timeText}>{formatTime(displayedDuration)}</Text>
-        </View>
+          <View style={styles.timeRow}>
+            <Text style={styles.timeText}>{formatTime(displayedPosition)}</Text>
+            <Text style={styles.timeText}>{formatTime(displayedDuration)}</Text>
+          </View>
         </View>
 
         <View style={styles.controls}>
@@ -383,11 +390,22 @@ export default function NowPlaying({navigation, route}) {
         </View>
 
         <View style={styles.actionsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bottomActions}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.bottomActions}>
             {bottomActions.map((action, idx) => (
-              <TouchableOpacity key={idx} style={styles.actionBtn} onPress={action.onPress} activeOpacity={0.7}>
+              <TouchableOpacity
+                key={idx}
+                style={styles.actionBtn}
+                onPress={action.onPress}
+                activeOpacity={0.7}>
                 <View style={styles.actionIconContainer}>
-                  <Ionicons name={action.icon} size={22} color={Colors.primary} />
+                  <Ionicons
+                    name={action.icon}
+                    size={22}
+                    color={Colors.primary}
+                  />
                 </View>
                 <Text style={styles.actionLabel}>{action.label}</Text>
               </TouchableOpacity>
@@ -396,7 +414,9 @@ export default function NowPlaying({navigation, route}) {
         </View>
 
         <View style={styles.queueHint}>
-          <Text style={styles.queueHintText}>File: {queueIndex + 1}/{Math.max(queue.length, 1)}</Text>
+          <Text style={styles.queueHintText}>
+            File: {queueIndex + 1}/{Math.max(queue.length, 1)}
+          </Text>
           <TouchableOpacity onPress={() => setQueueModalVisible(true)}>
             <Text style={styles.queueHintAction}>Voir tout</Text>
           </TouchableOpacity>
@@ -404,23 +424,49 @@ export default function NowPlaying({navigation, route}) {
       </ScrollView>
 
       {/* Modal Options */}
-      <Modal visible={optionsModalVisible} transparent animationType="fade" onRequestClose={() => setOptionsModalVisible(false)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setOptionsModalVisible(false)}>
+      <Modal
+        visible={optionsModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOptionsModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPress={() => setOptionsModalVisible(false)}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>Options du morceau</Text>
-            <TouchableOpacity style={styles.optionItem} onPress={openPlaylistModal}>
-               <Ionicons name="add-circle-outline" size={24} color={Colors.text} />
-               <Text style={styles.optionText}>Ajouter à une playlist</Text>
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={openPlaylistModal}>
+              <Ionicons
+                name="add-circle-outline"
+                size={24}
+                color={Colors.text}
+              />
+              <Text style={styles.optionText}>Ajouter à une playlist</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.optionItem} onPress={handleTrackShare}>
-               <Ionicons name="share-social-outline" size={24} color={Colors.text} />
-               <Text style={styles.optionText}>Partager le morceau</Text>
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={handleTrackShare}>
+              <Ionicons
+                name="share-social-outline"
+                size={24}
+                color={Colors.text}
+              />
+              <Text style={styles.optionText}>Partager le morceau</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.optionItem} onPress={() => {setOptionsModalVisible(false); downloadTrack(track);}}>
-               <Ionicons name="download-outline" size={24} color={Colors.text} />
-               <Text style={styles.optionText}>Télécharger</Text>
+            <TouchableOpacity
+              style={styles.optionItem}
+              onPress={() => {
+                setOptionsModalVisible(false);
+                downloadTrack(track);
+              }}>
+              <Ionicons name="download-outline" size={24} color={Colors.text} />
+              <Text style={styles.optionText}>Télécharger</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.modalClose} onPress={() => setOptionsModalVisible(false)}>
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() => setOptionsModalVisible(false)}>
               <Text style={styles.modalCloseText}>Annuler</Text>
             </TouchableOpacity>
           </View>
@@ -434,30 +480,62 @@ export default function NowPlaying({navigation, route}) {
       />
 
       {/* Modal Queue */}
-      <Modal visible={queueModalVisible} transparent animationType="slide" onRequestClose={() => setQueueModalVisible(false)}>
+      <Modal
+        visible={queueModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setQueueModalVisible(false)}>
         <View style={styles.modalBackdrop}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>File d'attente</Text>
             <ScrollView>
               {queue.map((t, i) => (
-                <TouchableOpacity key={`${t.id}-${i}`} style={styles.modalItem} onPress={() => {playFromQueue(i); setQueueModalVisible(false);}}>
+                <TouchableOpacity
+                  key={`${t.id}-${i}`}
+                  style={styles.modalItem}
+                  onPress={() => {
+                    playFromQueue(i);
+                    setQueueModalVisible(false);
+                  }}>
                   <View style={{flex: 1}}>
-                    <Text style={[styles.modalItemTitle, i === queueIndex && {color: Colors.primary}]}>{t.title}</Text>
+                    <Text
+                      style={[
+                        styles.modalItemTitle,
+                        i === queueIndex && {color: Colors.primary},
+                      ]}>
+                      {t.title}
+                    </Text>
                     <Text style={styles.modalItemMeta}>{getArtist(t)}</Text>
                   </View>
                   <TouchableOpacity onPress={() => removeFromQueue(t.id)}>
-                    <Ionicons name="close-circle-outline" size={22} color={Colors.danger} />
+                    <Ionicons
+                      name="close-circle-outline"
+                      size={22}
+                      color={Colors.danger}
+                    />
                   </TouchableOpacity>
                 </TouchableOpacity>
               ))}
             </ScrollView>
             <View style={{flexDirection: 'row', gap: 10, marginTop: 10}}>
-               <TouchableOpacity style={[styles.clearBtn, {backgroundColor: Colors.danger + '20'}]} onPress={() => {clearQueue(); setQueueModalVisible(false);}}>
-                 <Text style={{color: Colors.danger, fontWeight: 'bold'}}>Vider</Text>
-               </TouchableOpacity>
-               <TouchableOpacity style={styles.modalClose} onPress={() => setQueueModalVisible(false)}>
-                 <Text style={styles.modalCloseText}>Fermer</Text>
-               </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.clearBtn,
+                  {backgroundColor: Colors.danger + '20'},
+                ]}
+                onPress={() => {
+                  clearQueue();
+                  setQueueModalVisible(false);
+                }}>
+                <Text style={{color: Colors.danger, fontWeight: 'bold'}}>
+                  Vider
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalClose}
+                onPress={() => setQueueModalVisible(false)}>
+                <Text style={styles.modalCloseText}>Fermer</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </View>

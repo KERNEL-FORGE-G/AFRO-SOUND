@@ -282,24 +282,16 @@ export const getSupabaseSongs = async () => {
 /**
  * Récupère un titre par son ID
  */
-export const getTrackById = async (trackId) => {
+export const fetchLyrics = async (artist, title) => {
   try {
-    const {data, error} = await supabase
-      .from('tracks')
-      .select('*')
-      .eq('id', trackId)
-      .single();
-    
-    if (error) throw error;
-    
-    return {
-      ...data,
-      audioUrl: data.audio_url,
-      cover: data.cover_url,
-    };
+    const res = await fetch(
+      `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(title)}`,
+    );
+    const data = await res.json();
+    return data.lyrics || 'Paroles non disponibles.';
   } catch (e) {
-    console.warn('[getTrackById] Erreur:', e.message);
-    return null;
+    console.warn('[fetchLyrics] Erreur:', e.message);
+    return 'Paroles non disponibles.';
   }
 };
 
