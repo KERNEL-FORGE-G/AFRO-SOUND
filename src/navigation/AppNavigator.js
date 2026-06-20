@@ -52,7 +52,7 @@ const TabIcon = ({focused, color, size, routeName}) => {
     iconName = focused ? 'cloud-offline' : 'cloud-offline-outline';
   } else if (routeName === 'Téléchargement') {
     iconName = focused ? 'cloud-download' : 'cloud-download-outline';
-  } else if (routeName === 'Bibliothèque') {
+  } else if (routeName === 'Bibliotheque') {
     iconName = focused ? 'library' : 'library-outline';
   } else if (routeName === 'Profil') {
     iconName = focused ? 'person' : 'person-outline';
@@ -93,7 +93,7 @@ function MainTabs() {
         <Tab.Screen name="Accueil" component={Home} />
         <Tab.Screen name="Rechercher" component={Search} />
         <Tab.Screen name="Créer" component={CreatePlaylist} />
-        <Tab.Screen name="Bibliothèque" component={Library} />
+        <Tab.Screen name="Bibliotheque" component={Library} />
         <Tab.Screen name="Téléchargement" component={OfflineLibrary} />
         <Tab.Screen name="Profil" component={Profile} />
       </Tab.Navigator>

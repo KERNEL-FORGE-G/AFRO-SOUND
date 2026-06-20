@@ -193,7 +193,7 @@ export default function Home({navigation}) {
           <View style={styles.quickActions}>
             <TouchableOpacity
               style={styles.quickAction}
-              onPress={() => navigation.navigate('Bibliothèque')}>
+              onPress={() => navigation.navigate('Bibliotheque')}>
               <Ionicons
                 name="library-outline"
                 size={18}
