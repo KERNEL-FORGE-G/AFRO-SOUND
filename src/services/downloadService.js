@@ -10,7 +10,10 @@ export const downloadTrack = async track => {
 
   const {dirs} = RNFetchBlob.fs;
   const fileName = `${track.id || Date.now()}.mp3`;
-  const path = `${dirs.DocumentDir}/${fileName}`;
+  // On Android, use DownloadDir for better compatibility with DownloadManager
+  const path = Platform.OS === 'android' 
+    ? `${dirs.DownloadDir}/${fileName}` 
+    : `${dirs.DocumentDir}/${fileName}`;
 
   try {
     const config = {
@@ -20,7 +23,9 @@ export const downloadTrack = async track => {
         useDownloadManager: true,
         notification: true,
         path: path,
+        title: track.title || 'Téléchargement',
         description: 'Téléchargement de musique',
+        mime: 'audio/mpeg',
       },
     };
 
