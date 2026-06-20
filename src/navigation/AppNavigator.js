@@ -50,6 +50,10 @@ const TabIcon = ({focused, color, size, routeName}) => {
     iconName = focused ? 'add-circle' : 'add-circle-outline';
   } else if (routeName === 'Hors-ligne') {
     iconName = focused ? 'cloud-offline' : 'cloud-offline-outline';
+  } else if (routeName === 'Bibliothèque') {
+    iconName = focused ? 'library' : 'library-outline';
+  } else if (routeName === 'Profil') {
+    iconName = focused ? 'person' : 'person-outline';
   }
 
   return <Ionicons name={iconName} size={size} color={color} />;
@@ -87,7 +91,8 @@ function MainTabs() {
         <Tab.Screen name="Accueil" component={Home} />
         <Tab.Screen name="Rechercher" component={Search} />
         <Tab.Screen name="Créer" component={CreatePlaylist} />
-        <Tab.Screen name="Hors-ligne" component={OfflineLibrary} />
+        <Tab.Screen name="Bibliothèque" component={OfflineLibrary} />
+        <Tab.Screen name="Profil" component={Profile} />
       </Tab.Navigator>
 
       <View style={styles.playerBarWrapper}>
