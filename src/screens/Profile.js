@@ -178,6 +178,27 @@ export default function Profile({navigation}) {
         </View>
       </View>
 
+      <View style={styles.premiumCard}>
+        <View style={styles.premiumHeader}>
+          <Ionicons name="star" size={28} color={Colors.primary} />
+          <Text style={styles.premiumCardTitle}>Passer à Premium</Text>
+        </View>
+        <Text style={styles.premiumCardSubtitle}>
+          Déverrouillez les téléchargements illimités, écoutez hors ligne et supprimez les publicités.
+        </Text>
+        <TouchableOpacity
+          style={styles.premiumCardButton}
+          onPress={() => navigation.navigate('Premium')}>
+          <Text style={styles.premiumCardButtonText}>Découvrir Premium</Text>
+          <Ionicons
+            name="arrow-forward"
+            size={18}
+            color={Colors.background}
+            style={styles.premiumButtonIcon}
+          />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.editorCard}>
         <Text style={styles.sectionTitle}>Pseudo public</Text>
         <TextInput
@@ -314,6 +335,50 @@ const styles = StyleSheet.create({
   statValue: {color: Colors.text, fontSize: 20, fontWeight: 'bold'},
   statLabel: {color: Colors.textSoft, fontSize: 12, marginTop: 4},
   divider: {width: 1, height: 30, backgroundColor: Colors.border},
+  premiumCard: {
+    marginHorizontal: Spacing.md,
+    backgroundColor: Colors.background,
+    borderRadius: Radius.xl,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    padding: 20,
+    marginBottom: 20,
+    overflow: 'hidden',
+  },
+  premiumHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  premiumCardTitle: {
+    color: Colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+    marginLeft: 12,
+  },
+  premiumCardSubtitle: {
+    color: Colors.textSoft,
+    fontSize: 13,
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  premiumCardButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumCardButtonText: {
+    color: Colors.background,
+    fontWeight: '800',
+    fontSize: 14,
+  },
+  premiumButtonIcon: {
+    marginLeft: 8,
+  },
   editorCard: {
     marginHorizontal: Spacing.md,
     backgroundColor: Colors.card,
