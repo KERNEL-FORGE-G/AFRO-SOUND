@@ -296,6 +296,29 @@ export default function Home({navigation}) {
                 ))}
             </ScrollView>
 
+            <View style={styles.premiumStrip}>
+              <View style={styles.premiumGlow} />
+              <View style={styles.premiumCopy}>
+                <View style={styles.premiumBadge}>
+                  <Ionicons name="star" size={14} color={Colors.primary} />
+                  <Text style={styles.premiumBadgeText}>Premium</Text>
+                </View>
+                <Text style={styles.premiumTitle}>Débloquez l&apos;expérience complète</Text>
+                <Text style={styles.premiumDescription}>
+                  Téléchargez sans limite, écoutez hors ligne et plus encore.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.premiumButton}
+                onPress={() => navigation.navigate('Premium')}>
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color={Colors.background}
+                />
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.featureStrip}>
               <View style={styles.featureCopy}>
                 <Text style={styles.featureLabel}>Mode collaboratif</Text>
@@ -647,6 +670,73 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 0.7,
+  },
+  premiumStrip: {
+    marginTop: 28,
+    marginHorizontal: Spacing.md,
+    backgroundColor: Colors.background,
+    borderRadius: Radius.xl,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  premiumGlow: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: Colors.primary,
+    opacity: 0.08,
+    left: -60,
+    top: -40,
+  },
+  premiumCopy: {
+    flex: 1,
+    marginRight: 16,
+    zIndex: 1,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(231, 165, 59, 0.12)',
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(231, 165, 59, 0.4)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginBottom: 10,
+  },
+  premiumBadgeText: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: '800',
+    marginLeft: 6,
+    textTransform: 'uppercase',
+  },
+  premiumTitle: {
+    color: Colors.text,
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  premiumDescription: {
+    color: Colors.textSoft,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  premiumButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
   featureStrip: {
     marginTop: 28,

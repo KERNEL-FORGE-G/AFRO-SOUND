@@ -21,6 +21,7 @@ import GroupPlaylist from '../screens/GroupPlaylist';
 import Profile from '../screens/Profile';
 import Library from '../screens/Library';
 import OfflineLibrary from '../screens/OfflineLibrary';
+import Premium from '../screens/Premium';
 import {Colors, Radius, Shadows} from '../theme';
 import useAuth from '../hooks/useAuth';
 
@@ -213,6 +214,7 @@ export default function AppNavigator() {
         <Stack.Screen name="Lyrics" component={Lyrics} />
         <Stack.Screen name="SearchResults" component={SearchResults} />
         <Stack.Screen name="Profile" component={Profile} />
+        <Stack.Screen name="Premium" component={Premium} />
       </Stack.Navigator>
     </NavigationContainer>
   );

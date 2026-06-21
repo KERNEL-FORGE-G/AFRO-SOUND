@@ -14,6 +14,7 @@ import theme, {Colors} from '../theme';
 import {usePlayer} from '../context/PlayerContext';
 import useAuth from '../hooks/useAuth';
 import AddToPlaylistModal from '../components/AddToPlaylistModal';
+import DownloadButton from '../components/DownloadButton';
 import {
   fetchPlaylistTracks,
   removeTrackFromRemotePlaylist,
@@ -152,6 +153,11 @@ export default function MusicPage({route, navigation}) {
             color={Colors.primary}
           />
         </TouchableOpacity>
+        <DownloadButton
+          track={track}
+          style={styles.trackActionButton}
+          size="small"
+        />
         <TouchableOpacity
           style={styles.trackActionButton}
           onPress={() => openAddToPlaylist(track)}>
