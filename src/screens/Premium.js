@@ -28,30 +28,34 @@ export default function Premium({navigation}) {
   const [selectedPlan, setSelectedPlan] = useState('yearly');
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const getPlanDetails = plan => {
+    const plans = {
+      monthly: {name: 'Mensuel', price: '€4.99'},
+      yearly: {name: 'Annuel', price: '€39.99'},
+      family: {name: 'Famille', price: '€14.99'},
+    };
+    return plans[plan];
+  };
+
   const handleSubscribe = async plan => {
     setIsProcessing(true);
-    try {
-      // Simulating payment processing
-      // In production, integrate with Stripe or similar payment provider
-      setTimeout(() => {
-        Alert.alert(
-          'Succès',
-          `Vous avez souscrit au plan ${plan} avec succès!`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                setIsProcessing(false);
-                navigation.goBack();
-              },
+    const planDetails = getPlanDetails(plan);
+    
+    setTimeout(() => {
+      Alert.alert(
+        'Premium Activé! 🎉',
+        `${planDetails.name} (${planDetails.price}) déverrouillé avec succès!\n\nVous pouvez maintenant:\n✓ Télécharger des morceaux\n✓ Écouter hors ligne\n✓ Accès illimité`,
+        [
+          {
+            text: 'Fermer',
+            onPress: () => {
+              setIsProcessing(false);
+              navigation.goBack();
             },
-          ],
-        );
-      }, 2000);
-    } catch (error) {
-      Alert.alert('Erreur', 'Une erreur est survenue lors du paiement.');
-      setIsProcessing(false);
-    }
+          },
+        ],
+      );
+    }, 1500);
   };
 
   return (

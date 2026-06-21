@@ -93,9 +93,9 @@ Vous avez vu :
 
 | Si vous voulez... | Lisez... |
 |------------------|---------|
+| Présentation scolaire | `PRESENTATION_SCOLAIRE.md` ⭐ |
 | Vue d'ensemble | `CHANGES_SUMMARY.md` |
 | Guide complet | `IMPLEMENTATION_GUIDE.md` |
-| Intégrer paiement | `PAYMENT_INTEGRATION.md` |
 | Détails techniques | `PREMIUM_FEATURES.md` |
 | Checklist de test | `TESTING_CHECKLIST.md` |
 
@@ -103,17 +103,17 @@ Vous avez vu :
 
 ## 🎯 Prochaines Étapes Recommandées
 
-### Pour Vous
-1. **Tester sur device réel** (si possible)
-2. **Recueillir le feedback**
-3. **Lire la documentation**
-4. **Planifier l'intégration paiement**
+### Pour la Présentation
+1. **Tester sur device réel** (Android/iOS)
+2. **Enregistrer une démo vidéo**
+3. **Préparer les slides**
+4. **Pratiquer la présentation**
 
-### Pour l'App
-1. **Ajouter Stripe/RevenueCat**
-2. **Configurer les subscriptions**
-3. **Lancer tests utilisateur**
-4. **Go live!**
+### Pour l'App (Améliorations Futures)
+1. **Ajouter localStorage** pour persister le statut Premium
+2. **Ajouter restrictions** de téléchargement par utilisateur
+3. **Implémenter analytics** de téléchargement
+4. **Ajouter plus d'animations**
 
 ---
 
